@@ -1,5 +1,20 @@
 {
   "extends": "astro/tsconfigs/strict",
-  "include": [".astro/types.d.ts", "**/*"],
+  // Strict type-check scope = the CMS/admin code. The existing public presentation
+  // code (src/components, src/layouts, src/lib/*.mjs, the public pages) is untyped
+  // JS inside .astro files and has 28 pre-existing implicit-any errors under the strict
+  // config; it is intentionally left alone (the public site is frozen) and excluded here.
+  "include": [
+    ".astro/types.d.ts",
+    "worker-configuration.d.ts",
+    "src/env.d.ts",
+    "src/middleware.ts",
+    "src/lib/cms/**/*",
+    "src/lib/content/**/*",
+    "src/layouts/AdminLayout.astro",
+    "src/components/admin/**/*",
+    "src/pages/admin/**/*",
+    "src/pages/api/**/*"
+  ],
   "exclude": ["dist"]
 }
