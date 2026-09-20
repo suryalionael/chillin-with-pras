@@ -1,0 +1,8 @@
+# Copy to `.dev.vars` (git-ignored) for local development ONLY.
+#
+# Local dev has no Cloudflare Access in front of it, so the admin is unreachable
+# by default (fail closed). Setting this to "true" lets `astro dev` treat
+# loopback requests (localhost / 127.0.0.1) as the admin from ADMIN_EMAIL.
+# It has no effect in production: the bypass code is removed from production
+# builds, and it is only ever considered when import.meta.env.DEV is true.
+DEV_ADMIN_BYPASS=true

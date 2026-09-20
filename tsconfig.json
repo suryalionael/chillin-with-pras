@@ -16,5 +16,9 @@
     "src/pages/admin/**/*",
     "src/pages/api/**/*"
   ],
+  "compilerOptions": {
+    // Tests run through Node's type stripping, so only erasable TypeScript syntax is allowed.
+    "erasableSyntaxOnly": true
+  },
   "exclude": ["dist"]
 }
