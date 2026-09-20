@@ -1,0 +1,25 @@
+---
+const { as = 'h1' } = Astro.props;
+const Tag = as;
+---
+
+<Tag class="editorial-title">
+  <slot />
+</Tag>
+
+<style>
+  .editorial-title {
+    font-family: var(--serif);
+    font-weight: 500;
+    line-height: 1.02;
+    letter-spacing: -0.015em;
+  }
+
+  h1.editorial-title {
+    font-size: var(--fs-h-page);
+  }
+
+  h2.editorial-title {
+    font-size: var(--fs-h-section);
+  }
+</style>

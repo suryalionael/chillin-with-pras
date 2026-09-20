@@ -1,0 +1,145 @@
+{
+  "path": "show/the-artists-den",
+  "section": "show",
+  "title": "The Artist's Den",
+  "blocks": [
+    {
+      "type": "p",
+      "text": "An empty canvas, an unoccupied attic, and zero inspiration has left this easel idle for months.",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "Let's see what we can do to fill in the blanks...",
+      "style": ""
+    },
+    {
+      "type": "img",
+      "src": "../_Media/blank_canvas_med.jpeg",
+      "alt": "Blank Canvas",
+      "width": "430",
+      "height": "573"
+    },
+    {
+      "type": "p",
+      "text": "Start with a light sketch and base paint\u2026",
+      "style": ""
+    },
+    {
+      "type": "img",
+      "src": "../_Media/sketch__primer_med.jpeg",
+      "alt": "Sketch & Primer",
+      "width": "430",
+      "height": "322"
+    },
+    {
+      "type": "p",
+      "text": "Add the blue for sky\u2026",
+      "style": ""
+    },
+    {
+      "type": "img",
+      "src": "../_Media/sky_med.jpeg",
+      "alt": "Sky",
+      "width": "430",
+      "height": "322"
+    },
+    {
+      "type": "p",
+      "text": "Paint in the lake shore and sand\u2026",
+      "style": ""
+    },
+    {
+      "type": "img",
+      "src": "../_Media/water__sand_med.jpeg",
+      "alt": "Water & Sand",
+      "width": "430",
+      "height": "322"
+    },
+    {
+      "type": "p",
+      "text": "Lighten the sky, soften the sand\u2026",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "Illustrate the boardwalk and outline the subject..",
+      "style": ""
+    },
+    {
+      "type": "img",
+      "src": "../_Media/boardwalk_med.jpeg",
+      "alt": "Boardwalk",
+      "width": "430",
+      "height": "322"
+    },
+    {
+      "type": "p",
+      "text": "Fill in the green\u2026",
+      "style": ""
+    },
+    {
+      "type": "img",
+      "src": "../_Media/green__outline_med.jpeg",
+      "alt": "Green & Outline",
+      "width": "430",
+      "height": "322"
+    },
+    {
+      "type": "p",
+      "text": "It's autumn; highlight the trees in orange and gold\u2026",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "Give life to the runner...",
+      "style": ""
+    },
+    {
+      "type": "img",
+      "src": "../_Media/trees_med.jpeg",
+      "alt": "Trees",
+      "width": "430",
+      "height": "322"
+    },
+    {
+      "type": "p",
+      "text": "Touch ups, touch ups, touch ups\u2026",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "Let's not forget the stamp of approval\u2026",
+      "style": ""
+    },
+    {
+      "type": "img",
+      "src": "../_Media/signature_med.jpeg",
+      "alt": "Signature",
+      "width": "430",
+      "height": "322"
+    },
+    {
+      "type": "p",
+      "text": "Et Voila..!",
+      "style": ""
+    },
+    {
+      "type": "img",
+      "src": "../_Media/img_0770_med.jpeg",
+      "alt": "IMG 0770",
+      "width": "430",
+      "height": "289"
+    },
+    {
+      "type": "p",
+      "text": "I'll call it\u2026",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "\"The Boardwalk Run\"",
+      "style": ""
+    }
+  ]
+}

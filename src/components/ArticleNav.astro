@@ -1,0 +1,143 @@
+---
+// End of an entry: the next entry is a full feature (photo + title) so the
+// reading journey continues; previous / all entries sit quietly underneath.
+import Photo from './Photo.astro';
+import { SECTIONS, prevArticle, nextArticle, leadImage, sectionCover } from '../lib/site.mjs';
+
+const { article, section } = Astro.props;
+const sec = SECTIONS[section];
+const prev = prevArticle(article, section);
+const next = nextArticle(article, section);
+
+// last entry: hand the reader back to the start of the chapter instead
+const target = next
+  ? { href: next.path, title: next.title, file: leadImage(next), label: 'Next entry', date: next.dateline, cta: 'Read the next entry' }
+  : { href: sec.path, title: sec.title, file: sectionCover(section), label: 'That was the last entry', date: '', cta: 'Back to all entries' };
+---
+
+<nav class="container article-nav" aria-label="More entries">
+  <a class="upnext" href={target.href}>
+    <div class="upnext__media photo-frame">
+      <Photo file={target.file} alt="" fit="cover" minAr={1.4} maxAr={1.4} sizes="(max-width: 900px) 92vw, 720px" />
+    </div>
+    <div class="upnext__text">
+      <p class="label">{target.label}</p>
+      <p class="upnext__title">{target.title}</p>
+      {target.date && <p class="hand-date">{target.date}</p>}
+      <span class="more">{target.cta} <span class="more__arrow" aria-hidden="true">→</span></span>
+    </div>
+  </a>
+
+  <div class="article-nav__foot">
+    {prev ? (
+      <a class="article-nav__link" href={prev.path}>
+        <span class="label">← Previous entry</span>
+        <span class="article-nav__title">{prev.title}</span>
+      </a>
+    ) : (
+      <span></span>
+    )}
+    <a class="article-nav__link article-nav__link--right" href={sec.path}>
+      <span class="label">All entries</span>
+      <span class="article-nav__title">{sec.title}</span>
+    </a>
+  </div>
+</nav>
+
+<style>
+  .article-nav {
+    margin-top: var(--section);
+  }
+
+  .upnext {
+    display: grid;
+    grid-template-columns: minmax(0, 8fr) minmax(0, 5fr);
+    gap: 2rem clamp(2rem, 5vw, 5rem);
+    align-items: center;
+    padding-block: clamp(2.5rem, 5vw, 4rem);
+    border-top: 1px solid var(--line);
+  }
+
+  .upnext__media :global(.photo) {
+    transition: transform 0.8s var(--ease-out);
+  }
+  .upnext:hover .upnext__media :global(.photo) {
+    transform: scale(1.03);
+  }
+
+  .upnext__text {
+    display: grid;
+    justify-items: start;
+    gap: 0.9rem;
+  }
+
+  .upnext__title {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: var(--fs-h-entry);
+    line-height: 1.1;
+    letter-spacing: -0.012em;
+    text-wrap: balance;
+  }
+  .upnext:hover .upnext__title {
+    color: var(--accent-warm);
+  }
+  .upnext .more {
+    margin-top: 0.6rem;
+  }
+  .upnext:focus-visible {
+    outline-offset: 8px;
+  }
+
+  .article-nav__foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 1.5rem 3rem;
+    padding-top: 1.75rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .article-nav__link {
+    display: grid;
+    gap: 0.35rem;
+    align-content: start;
+    min-height: 48px;
+    padding: 0.5rem 0;
+  }
+  .article-nav__link--right {
+    text-align: right;
+  }
+
+  .article-nav__title {
+    font-family: var(--serif);
+    font-size: 1.4rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--ink);
+    max-width: 22ch;
+  }
+  .article-nav__link:hover .article-nav__title {
+    color: var(--accent-warm);
+  }
+  .article-nav__link:focus-visible {
+    outline: 2px solid var(--accent-warm);
+    outline-offset: 4px;
+    border-radius: 2px;
+  }
+
+  @media (max-width: 900px) {
+    .upnext {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+  }
+
+  @media (max-width: 540px) {
+    .article-nav__foot {
+      flex-direction: column;
+    }
+    .article-nav__link--right {
+      text-align: left;
+    }
+  }
+</style>

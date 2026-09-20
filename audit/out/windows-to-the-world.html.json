@@ -1,0 +1,325 @@
+{
+  "path": "show/windows-to-the-world",
+  "section": "show",
+  "title": "Windows to the World",
+  "blocks": [
+    {
+      "type": "p",
+      "text": "Of the brief travels in my life, there are few things that continuously pique my interest. Windows. Or more accurately, what goes on behind them, and the history within that we can only imagine as passersby. Consider me perverted for having such curiosity, however, consider these glass openings as eyes and witnesses to the different lifestyles and mannerisms of its inhabitants.",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "It would be ambitious to compare a simple wood-frame opening in a village dwelling in Java to that of a bullet-proof pane of a palace in London. But if we peered through the frames and saw the motions and emotions of its residents, these two portals may not be so worlds apart.",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "It is therefore that I capture many images of windows throughout my trips. Some are presented here in my slideshow. Not only did I take the photos looking in, some shots were more captivating (and more accessible) looking out. Few of the pictures were challenging to take (sit, cat, sit). And the one opportunity I missed due to lack of valour... think live displays in Amersterdam's red-light district. But that's for another story.",
+      "style": ""
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/amsterdam.jpeg",
+      "alt": "Amsterdam",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/bondi-nsw.jpeg",
+      "alt": "Bondi NSW",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/brooklyn.jpeg",
+      "alt": "Brooklyn",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/brugge-i.jpeg",
+      "alt": "Brugge I",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/brugge-ii.jpeg",
+      "alt": "Brugge II",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/central-station-luxembourg.jpeg",
+      "alt": "Central Station, Luxembourg",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/chicago.jpeg",
+      "alt": "Chicago",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/collingwood-on.jpeg",
+      "alt": "Collingwood ON",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/delft.jpeg",
+      "alt": "Delft",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/distillery-district.jpeg",
+      "alt": "Distillery District",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/distillery-toronto.jpeg",
+      "alt": "Distillery Toronto",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/fashion-district.jpeg",
+      "alt": "Fashion District",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/high-line-ny.jpeg",
+      "alt": "High Line, NY",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/high-line-nyc.jpeg",
+      "alt": "High Line, NYC",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/klaten-java.jpeg",
+      "alt": "Klaten Java",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/london.jpeg",
+      "alt": "London",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/luxembourg.jpeg",
+      "alt": "Luxembourg",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/madurodam.jpeg",
+      "alt": "Madurodam",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/manhattan-ny.jpeg",
+      "alt": "Manhattan, NY",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/ottawa.jpeg",
+      "alt": "Ottawa",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/prague.jpeg",
+      "alt": "Prague",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/quebec-city.jpeg",
+      "alt": "Quebec City",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/rome-railway.jpeg",
+      "alt": "Rome Railway",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/snow-valley-on.jpeg",
+      "alt": "Snow Valley ON",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/sydney-nsw.jpeg",
+      "alt": "Sydney NSW",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/union-stn-toronto.jpeg",
+      "alt": "Union Stn Toronto",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/vienna.jpeg",
+      "alt": "Vienna",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/volendam-netherlands.jpeg",
+      "alt": "Volendam, Netherlands",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "img",
+      "src": "../../_Media/wa-mozart-apt-vienna.jpeg",
+      "alt": "WA Mozart apt Vienna",
+      "width": "706",
+      "height": "600"
+    },
+    {
+      "type": "p",
+      "text": "Draw the blinds",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "And reveal yourselves",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "Of the lives and the secrets",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "That you preciously guard.",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "Raise the curtains",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "To exhibit your fruits",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "Of crime and corruption",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "That you heavily stash.",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "Open the louvres",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "And expose your truth",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "Of love-making and rape",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "That give rise to abuse.",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "Unhinge the panes",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "To release the stigma",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "Of indulgence and contempt",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "That measures success.",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "Yet beyond the walls",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "We are no less disgraced",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "Of predation and perversion",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "That pollute our minds.",
+      "style": ""
+    }
+  ]
+}

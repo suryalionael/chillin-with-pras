@@ -1,0 +1,157 @@
+{
+  "path": "show/food-for-thought",
+  "section": "show",
+  "title": "Food for Thought",
+  "blocks": [
+    {
+      "type": "p",
+      "text": "I have never been a wealthy person. Don't drive a Merc. Never flown first-class. Was not born with a silver spoon in my mouth, and grew up with the notion that even if I worked my butt off, this individual would never reach Trump status.",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "However, one privilege I own is that I have never been without food. Never been starved, malnourished, nor ever begged for a meal.",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "In fact, I am grateful to claim that I have been fortunate enough to try out many menu types. From Ethiopean injera to French steak tartare, both dishes I would rather not consume ever again.",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "Here's a sample of the interesting meals I've digested in the past.",
+      "style": ""
+    },
+    {
+      "type": "img",
+      "src": "../_Media/honey_and_yoghurt_-_greece_med.jpeg",
+      "alt": "Honey and Yoghurt - Greece",
+      "width": "430",
+      "height": "321"
+    },
+    {
+      "type": "p",
+      "text": "Breakfast of yoghurt and honey in Greece. We were initiated to this delicious start to the day while on travel in 2005 and never heard about it again until the economic downfall hit the nation in 2012. It was reported that the yoghurt maintained to be a stable export of Greece throughout the debt crisis.",
+      "style": ""
+    },
+    {
+      "type": "img",
+      "src": "../_Media/roo_on_a_bun_-_sydney_med.jpeg",
+      "alt": "'Roo on a Bun - Sydney",
+      "width": "430",
+      "height": "322"
+    },
+    {
+      "type": "p",
+      "text": "Nothing symbolizes Australia better than kangaroos and the Sydney Opera House. It was therefore such a special treat to be able to attend a rooftop barbecue serving 'roo meat on a bun, while overlooking the harbour and the sail-inspired contours of the concert venue. February 2011.",
+      "style": ""
+    },
+    {
+      "type": "img",
+      "src": "../_Media/wieners_in_wien_med.jpeg",
+      "alt": "Wieners in Wien",
+      "width": "430",
+      "height": "215"
+    },
+    {
+      "type": "p",
+      "text": "Wieners in Wien. October 2007. Religious restrictions aside, I just had to have some bratwurst while visiting Vienna.",
+      "style": ""
+    },
+    {
+      "type": "img",
+      "src": "../_Media/gudeg_cooked_jackfruit_-_med.jpeg",
+      "alt": "Gudeg, Cooked Jackfruit - Jogjakarta",
+      "width": "430",
+      "height": "573"
+    },
+    {
+      "type": "p",
+      "text": "Gudeg. An Indonesian dish from Central Java consisting of cooked jackfruit accompanied with tempeh and beef rind and the occasional chicken. Best served with rice on banana leaves with cold bottled tea to sweeten ingestion.",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "Fit for a Javanese prince!",
+      "style": ""
+    },
+    {
+      "type": "img",
+      "src": "../_Media/pret_a_manger_-_london_med.jpeg",
+      "alt": "Pret a Manger - London",
+      "width": "430",
+      "height": "322"
+    },
+    {
+      "type": "p",
+      "text": "Hungry for a quick bite in London? Forget the 'golden arches'. Simple sandwiches, baguettes and cakes can be found at Pret a Manger. Translation; Ready to Eat.",
+      "style": ""
+    },
+    {
+      "type": "img",
+      "src": "../_Media/raw_herring_on_a_bun_med.jpeg",
+      "alt": "Raw Herring on a Bun",
+      "width": "430",
+      "height": "322"
+    },
+    {
+      "type": "p",
+      "text": "A recent visit to Amsterdam took me back to when I first tried this delicacy in my teen years. Cool, smooth, melt-in-your-mouth sensation. Sushi's got nothin' on raw-herring on a bun. May 2012",
+      "style": ""
+    },
+    {
+      "type": "img",
+      "src": "../_Media/crab_swich__grilled_calamar_med.jpeg",
+      "alt": "Crab S'wich & Grilled Calamari",
+      "width": "430",
+      "height": "479"
+    },
+    {
+      "type": "p",
+      "text": "A morning bicycle ride to the St. Lawrence market in Toronto cannot be complete without re-energizing the soul with crab sandwich and grilled calamari.",
+      "style": ""
+    },
+    {
+      "type": "img",
+      "src": "../_Media/belgian_waffles_med.jpeg",
+      "alt": "Belgian Waffles",
+      "width": "430",
+      "height": "573"
+    },
+    {
+      "type": "p",
+      "text": "There are apparently two main types of Belgian waffles. The thinner, square or round sized, toast-able Brussels waffle more familiar to North Americans as frozen breakfast treats. And then there's the Liege waffle as shown above. Chunkier and chewier. This was our choice of dessert while taking in the view at the Grand Place, Bruxelles.",
+      "style": ""
+    },
+    {
+      "type": "img",
+      "src": "../_Media/fries_and_mayo_med.jpeg",
+      "alt": "Fries and Mayo",
+      "width": "430",
+      "height": "228"
+    },
+    {
+      "type": "p",
+      "text": "Whoever thought that the best french fries/potato chips to ever pass our lips would come from the Netherlands? Crisp on the outside, soft inside, beautifully golden, perfectly fried. Dipped into mayo, NOT ketchup, the experience is heavenly.",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "Being Indonesian, I regard the Rijstaffel as samples of different dishes from the mother-world. I never came across a complete rijstaffel meal when living in Jakarta. The Aneka Rasa restaurant on Warmoesstraat Amsterdam was my first acquaintance. The serving consisted of, among others, rendang (spicy beef), opor ayam (chicken in coconut sauce), gule kambing (goat curry), telur balado (chilli egg) and chicken satay.",
+      "style": ""
+    },
+    {
+      "type": "img",
+      "src": "../_Media/aneka_rasa_on_warmoesstraat_med.jpeg",
+      "alt": "Aneka Rasa on Warmoesstraat",
+      "width": "430",
+      "height": "322"
+    },
+    {
+      "type": "p",
+      "text": "Trust the colonists to grab a bit of everything the indigenous people can offer!",
+      "style": ""
+    }
+  ]
+}

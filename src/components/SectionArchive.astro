@@ -1,0 +1,139 @@
+---
+import Base from '../layouts/Base.astro';
+import EditorialTitle from '../components/EditorialTitle.astro';
+import ArchiveList from '../components/ArchiveList.astro';
+import Photo from '../components/Photo.astro';
+import { ratio } from '../lib/images';
+import { SECTIONS, sectionCover, sectionDesc, two, articlesIn } from '../lib/site.mjs';
+
+const { section } = Astro.props;
+const sec = SECTIONS[section];
+const count = articlesIn(section).length;
+const cover = sectionCover(section);
+const coverAr = ratio(cover).toFixed(4);
+const chapterNum = section === 'observe' ? '01' : '02';
+---
+
+<Base
+  title={sec.title}
+  description={sectionDesc(section)[0]}
+  canonical={`https://www.chillinwithpras.com${sec.path}`}
+  current={sec.path}
+>
+  <section class="container section-head">
+    <p class="section-head__run label">
+      chapter {chapterNum} <span class="section-head__sep" aria-hidden="true">·</span> {count} entries
+    </p>
+    <EditorialTitle>{sec.title}</EditorialTitle>
+
+    <div class="section-head__body">
+      <div class="section-head__desc">
+        {
+          sectionDesc(section).map((line, i) => (
+            <p class:list={[i === 0 && 'is-lead']}>{line}</p>
+          ))
+        }
+      </div>
+
+      <figure class="section-head__fig" style={`--ar:${coverAr}`}>
+        <div class="photo-frame">
+          <Photo
+            file={cover}
+            alt={sec.title}
+            widths={[640, 960, 1280, 1720]}
+            sizes="(max-width: 900px) 92vw, 760px"
+            loading="eager"
+          />
+        </div>
+        <figcaption class="hand section-head__slug" aria-hidden="true">chapter {chapterNum}</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="container section-archive" aria-label={`${sec.title} entries`}>
+    <ArchiveList section={section} />
+  </section>
+
+  <p class="container section-feed">
+    <a class="more" href="/rss.xml">Subscribe to the RSS feed <span class="more__arrow" aria-hidden="true">→</span></a>
+  </p>
+</Base>
+
+<style>
+  .section-head {
+    padding-top: clamp(3.5rem, 8vw, 6rem);
+  }
+
+  .section-head__run {
+    margin-bottom: 1.6rem;
+    color: var(--accent-warm);
+  }
+
+  .section-head__sep {
+    color: var(--line-strong);
+  }
+
+  .section-head__body {
+    margin-top: clamp(2.5rem, 5vw, 4rem);
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: clamp(2.5rem, 6vw, 6rem);
+    align-items: center;
+  }
+
+  .section-head__desc p {
+    font-family: var(--serif);
+    font-size: var(--fs-body);
+    font-weight: 500;
+    line-height: 1.75;
+    color: var(--ink-soft);
+    margin-top: 1.1rem;
+  }
+  .section-head__desc p:first-child {
+    margin-top: 0;
+  }
+  .section-head__desc .is-lead {
+    font-size: 1.7rem;
+    line-height: 1.45;
+    font-style: italic;
+    color: var(--ink);
+  }
+
+  .section-head__fig {
+    position: relative;
+    width: min(100%, calc(var(--ar) * 62vh));
+    justify-self: end;
+  }
+
+  .section-head__slug {
+    position: absolute;
+    bottom: -2.4rem;
+    left: 0.2rem;
+    font-size: var(--fs-hand);
+    line-height: 1;
+    transform: rotate(-1.3deg);
+  }
+
+  .section-archive {
+    padding-top: clamp(4.5rem, 8vw, 6.5rem);
+  }
+
+  .section-feed {
+    margin-top: 3.5rem;
+  }
+
+  @media (max-width: 900px) {
+    .section-head__body {
+      grid-template-columns: 1fr;
+    }
+    .section-head__fig {
+      order: -1;
+      justify-self: stretch;
+      margin-bottom: 1.5rem;
+    }
+    .section-head__slug {
+      bottom: -2.2rem;
+      font-size: 1.5rem;
+    }
+  }
+</style>

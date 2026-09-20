@@ -1,0 +1,352 @@
+---
+import Base from '../layouts/Base.astro';
+import Photo from '../components/Photo.astro';
+import { ratio } from '../lib/images';
+import site, { SECTIONS, sectionDesc, sectionCover, two, articlesIn, leadImage } from '../lib/site.mjs';
+
+const dictImage = site.home.blocks.find((b) => b.type === 'img');
+const dictParas = site.home.blocks.filter((b) => b.type === 'p');
+
+const observe = articlesIn('observe');
+const show = articlesIn('show');
+const selected = [observe[observe.length - 1], observe[observe.length - 2], show[show.length - 1]].filter(Boolean);
+
+const chapters = [
+  { key: 'observe', n: '01', count: observe.length },
+  { key: 'show', n: '02', count: show.length },
+];
+
+function excerpt(article) {
+  const p = article.blocks.find((b) => b.type === 'p' && !b.subhead && b.text !== article.dateline && b.text !== '');
+  if (!p) return '';
+  const words = p.text.split(/\s+/);
+  let out = '';
+  for (const w of words) {
+    if ((out + ' ' + w).trim().length > 170) break;
+    out += ' ' + w;
+  }
+  out = out.trim();
+  return /[.?!…]$/.test(out) ? out : out + '…';
+}
+---
+
+<Base title={site.site.coverTitle} canonical="https://www.chillinwithpras.com/" current="/">
+  <section class="container cover">
+    <p class="cover__kicker label">a personal archive</p>
+    <h1 class="cover__title">Observations of a Slacker</h1>
+
+    <div class="cover__body">
+      <div class="cover__dict">
+        {
+          dictParas.map((p, i) =>
+            i === 0 ? (
+              <p class="cover__dict-head">{p.text}</p>
+            ) : (
+              <p class="cover__dict-line" data-i={i}>{p.text}</p>
+            )
+          )
+        }
+      </div>
+
+      {dictImage && (
+        <figure class="cover__fig" style={`--ar:${ratio(dictImage.file).toFixed(4)}`}>
+          <div class="photo-frame">
+            <Photo
+              file={dictImage.file}
+              alt={dictImage.alt || 'Merriam-Webster dictionary entries for the word slacker'}
+              sizes="(max-width: 900px) 92vw, 760px"
+              loading="eager"
+            />
+          </div>
+          <figcaption class="cover__slug hand">the original entry</figcaption>
+        </figure>
+      )}
+    </div>
+  </section>
+
+  <section class="container chapters" aria-labelledby="chapters-h">
+    <h2 id="chapters-h" class="section-title">The chapters</h2>
+    <ol class="chapters__list">
+      {
+        chapters.map((c) => (
+          <li class="chapter hover-host">
+            <div class="chapter__media photo-frame">
+              <Photo file={sectionCover(c.key)} alt="" fit="cover" minAr={1.4} maxAr={1.4} sizes="(max-width: 900px) 92vw, 640px" />
+            </div>
+            <div class="chapter__text">
+              <p class="chapter__num">{c.n}</p>
+              <h3 class="chapter__title">
+                <a href={SECTIONS[c.key].path}>{c.key === 'observe' ? 'To Observe & Report' : 'To Show & Tell'}</a>
+              </h3>
+              <p class="chapter__desc">{sectionDesc(c.key)[0]}</p>
+              <p class="chapter__count hand-date">{c.count} entries</p>
+              <p class="chapter__cta" aria-hidden="true"><span class="more">Enter the chapter <span class="more__arrow">→</span></span></p>
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+  </section>
+
+  <section class="container selected" aria-labelledby="selected-h">
+    <h2 id="selected-h" class="section-title">Latest entries</h2>
+    <ul class="selected__list">
+      {
+        selected.map((a, i) => (
+          <li class:list={['pick', 'hover-host', i === 0 && 'pick--lead']}>
+            <div class="pick__media photo-frame">
+              <Photo
+                file={leadImage(a)}
+                alt={a.title}
+                fit="cover"
+                minAr={i === 0 ? 1.5 : 1.33}
+                maxAr={i === 0 ? 1.9 : 1.33}
+                sizes={i === 0 ? '(max-width: 900px) 92vw, 1200px' : '(max-width: 900px) 92vw, 640px'}
+              />
+            </div>
+            <div class="pick__text">
+              <p class="meta">
+                <span class="label">{a.section === 'observe' ? 'To Observe & Report' : 'To Show & Tell'}</span>
+                {a.dateline && <span class="meta__dot" aria-hidden="true">·</span>}
+                {a.dateline && <span class="hand-date">{a.dateline}</span>}
+              </p>
+              <h3 class="pick__title">
+                <a href={a.path}>{a.title}</a>
+              </h3>
+              <p class="pick__excerpt">{excerpt(a)}</p>
+              <p class="pick__cta" aria-hidden="true"><span class="more">Read the entry <span class="more__arrow">→</span></span></p>
+            </div>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</Base>
+
+<style>
+  .cover {
+    padding-top: clamp(3.5rem, 8vw, 6.5rem);
+  }
+
+  .cover__kicker {
+    margin-bottom: 1.6rem;
+    color: var(--accent-warm);
+  }
+
+  .cover__title {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(3.4rem, 10vw, 7.25rem);
+    line-height: 0.98;
+    letter-spacing: -0.02em;
+    max-width: 13ch;
+    text-wrap: balance;
+  }
+
+  .cover__body {
+    margin-top: clamp(3rem, 6vw, 5rem);
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: clamp(2.5rem, 6vw, 6rem);
+    align-items: center;
+  }
+
+  .cover__dict-head {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 1.8rem;
+    line-height: 1.4;
+    color: var(--ink);
+  }
+
+  .cover__dict-line {
+    margin-top: 1.3rem;
+    font-family: var(--serif);
+    font-size: 1.34rem;
+    color: var(--ink-soft);
+    line-height: 1.7;
+  }
+
+  .cover__dict-line[data-i='1'] {
+    margin-top: 2rem;
+    padding-left: 1.6rem;
+    border-left: 2px solid var(--line-strong);
+  }
+
+  .cover__fig {
+    position: relative;
+    width: min(100%, calc(var(--ar) * 70vh));
+    justify-self: end;
+  }
+
+  .cover__slug {
+    position: absolute;
+    bottom: -2.4rem;
+    left: 0.2rem;
+    font-size: 1.75rem;
+    line-height: 1;
+    transform: rotate(-1.2deg);
+  }
+
+  /* chapters — two large image-led cards */
+  .chapters,
+  .selected {
+    padding-top: var(--section);
+  }
+
+  .chapters__list {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(2.5rem, 5vw, 4.5rem);
+  }
+
+  .chapter {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+  }
+  .chapter__media :global(.photo),
+  .pick__media :global(.photo) {
+    transition: transform 0.8s var(--ease-out);
+  }
+  .chapter:hover .chapter__media :global(.photo),
+  .pick:hover .pick__media :global(.photo) {
+    transform: scale(1.03);
+  }
+
+  .chapter__num {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 1.9rem;
+    color: var(--accent-warm);
+    line-height: 1;
+    margin-bottom: 0.8rem;
+  }
+
+  .chapter__title,
+  .pick__title {
+    font-family: var(--serif);
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.012em;
+  }
+  .chapter__title {
+    font-size: var(--fs-h-entry);
+  }
+  .chapter__title a::after,
+  .pick__title a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+  .chapter:hover .chapter__title a,
+  .pick:hover .pick__title a {
+    color: var(--accent-warm);
+  }
+  .chapter__title a:focus-visible,
+  .pick__title a:focus-visible {
+    outline: none;
+  }
+  .chapter:has(a:focus-visible),
+  .pick:has(a:focus-visible) {
+    outline: 2px solid var(--accent-warm);
+    outline-offset: 8px;
+  }
+
+  .chapter__desc {
+    margin-top: 1rem;
+    font-size: 1.34rem;
+    line-height: 1.65;
+    color: var(--ink-soft);
+    max-width: 38rem;
+  }
+
+  .chapter__text {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .chapter__cta {
+    margin-top: auto;
+    padding-top: 1.4rem;
+  }
+
+  .chapter__count {
+    margin-top: 1.1rem;
+    transform: rotate(-1.5deg);
+    transform-origin: left;
+  }
+
+  /* selected entries — one lead, two supporting */
+  .selected__list {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(3rem, 5vw, 4.5rem) clamp(2.5rem, 5vw, 4.5rem);
+  }
+
+  .pick {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 1.6rem;
+  }
+
+  .pick--lead {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: minmax(0, 8fr) minmax(0, 4fr);
+    gap: clamp(2rem, 5vw, 4.5rem);
+    align-items: center;
+  }
+
+  .pick__title {
+    font-size: clamp(2rem, 3.2vw, 2.7rem);
+    text-wrap: balance;
+  }
+  .pick--lead .pick__title {
+    font-size: clamp(2.4rem, 4vw, 3.6rem);
+  }
+
+  .pick .meta {
+    margin-bottom: 0.9rem;
+  }
+
+  .pick__cta {
+    margin-top: 1.4rem;
+  }
+
+  .pick__excerpt {
+    margin-top: 1.1rem;
+    font-style: italic;
+    font-size: 1.3rem;
+    line-height: 1.65;
+    color: var(--ink-soft);
+  }
+
+  @media (max-width: 900px) {
+    .cover__body {
+      grid-template-columns: 1fr;
+    }
+    .cover__fig {
+      order: -1;
+      justify-self: stretch;
+      margin-bottom: 1.5rem;
+    }
+    .chapters__list,
+    .selected__list {
+      grid-template-columns: 1fr;
+    }
+    .pick--lead {
+      display: flex;
+      flex-direction: column;
+      gap: 1.6rem;
+    }
+  }
+</style>

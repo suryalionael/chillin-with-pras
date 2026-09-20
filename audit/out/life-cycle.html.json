@@ -1,0 +1,29 @@
+{
+  "path": "observe/life-cycle",
+  "section": "observe",
+  "title": "Life Cycle",
+  "blocks": [
+    {
+      "type": "p",
+      "text": "It has been a long winter. The world is not such a beautiful place after heartache, frustration, and self-doubt creeps in. Losing a job to those considered smarter, tougher and better equipped takes a toll on one\u2019s self-esteem. Idleness has made the soul empty, the mind weak, and the mechanics rusty.",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "Now that spring is in, the sun is out, and there is much anticipation for that first whiff of warm air. Nothing beats the therapeutic sensation of wind blasting through the spokes, gravel cracking under the treads, and Master Rider on my saddle. The world is definitely a beautiful place.",
+      "style": ""
+    },
+    {
+      "type": "img",
+      "src": "../_Media/master_rider_med.jpeg",
+      "alt": "Master Rider",
+      "width": "430",
+      "height": "573"
+    },
+    {
+      "type": "p",
+      "text": "Spring 2013",
+      "style": ""
+    }
+  ]
+}

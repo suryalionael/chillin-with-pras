@@ -1,0 +1,65 @@
+---
+import Base from '../layouts/Base.astro';
+import ArticleHeader from './ArticleHeader.astro';
+import ArticleBody from './ArticleBody.astro';
+import ArticleNav from './ArticleNav.astro';
+import Figure from './Figure.astro';
+import { sectionOf, leadImage } from '../lib/site.mjs';
+import { findImage } from '../lib/images';
+
+const { slug, section } = Astro.props;
+const article = sectionOf(slug);
+if (!article || article.section !== section) {
+  throw new Error(`Unknown article ${section}/${slug}`);
+}
+
+const introIdx = article.blocks.findIndex(
+  (b) => b.type === 'p' && !b.subhead && b.text !== article.dateline
+);
+const intro = introIdx >= 0 ? article.blocks[introIdx] : null;
+let bodyBlocks = introIdx >= 0 ? article.blocks.filter((_, i) => i !== introIdx) : article.blocks;
+
+// Reading journey: title, metadata, then a large photograph. The entry's first
+// photograph becomes the hero when it appears near the top of the story; a
+// photograph the author placed much deeper stays where it was written.
+const firstImg = bodyBlocks.findIndex((b) => b.type === 'img');
+const hero = firstImg >= 0 && firstImg <= 8 ? bodyBlocks[firstImg] : null;
+if (hero) bodyBlocks = bodyBlocks.filter((_, i) => i !== firstImg);
+const canonicalUrl = `https://www.chillinwithpras.com${article.path}`;
+const og = `https://www.chillinwithpras.com${findImage(leadImage(article)).src}`;
+---
+
+<Base
+  title={article.title}
+  description={(intro?.text ?? '').slice(0, 150)}
+  canonical={canonicalUrl}
+  ogImage={og}
+  current={article.path}
+  type="article"
+>
+  <article class="container story">
+    <ArticleHeader
+      section={section}
+      entry={article.order}
+      title={article.title}
+      intro={intro?.text ?? ''}
+      dateline={article.dateline}
+    />
+
+    {hero && (
+      <div class="story__hero">
+        <Figure variant="single" files={[{ file: hero.file, alt: hero.alt || article.title }]} hero={true} />
+      </div>
+    )}
+
+    <ArticleBody blocks={bodyBlocks} dateline={article.dateline} />
+  </article>
+
+  <ArticleNav article={article} section={section} />
+</Base>
+
+<style>
+  .story__hero {
+    margin-bottom: clamp(3.5rem, 7vw, 5.5rem);
+  }
+</style>

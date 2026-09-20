@@ -1,0 +1,65 @@
+---
+---
+
+<footer class="site-footer">
+  <div class="container site-footer__row">
+    <p class="site-footer__copy">&copy; Prakoso Sastrowardoyo 2012</p>
+    <nav class="site-footer__links" aria-label="Footer">
+      <a href="/rss.xml">RSS feed</a>
+      <a href="#top">Back to top <span aria-hidden="true">↑</span></a>
+    </nav>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    margin-top: var(--section);
+    border-top: 1px solid var(--line);
+    padding-block: 2.5rem 3rem;
+    color: var(--ink-soft);
+  }
+
+  .site-footer__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem 2rem;
+    flex-wrap: wrap;
+  }
+
+  .site-footer__copy {
+    font-family: var(--sans);
+    font-size: 1rem;
+  }
+
+  .site-footer__links {
+    display: flex;
+    gap: 2rem;
+  }
+
+  .site-footer__links a {
+    font-family: var(--sans);
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--accent-warm);
+    padding: 0.75rem 0;
+    border-bottom: 1px solid transparent;
+    transition: color 0.2s var(--ease-out), border-color 0.2s var(--ease-out);
+  }
+  .site-footer__links a:hover {
+    color: var(--ink);
+    border-color: var(--ink);
+  }
+  .site-footer__links a:focus-visible {
+    outline: 2px solid var(--accent-warm);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  @media (max-width: 540px) {
+    .site-footer__row {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>

@@ -1,0 +1,64 @@
+{
+  "path": "observe/my-guitar-gently-weeps",
+  "section": "observe",
+  "title": "My Guitar Gently Weeps",
+  "blocks": [
+    {
+      "type": "p",
+      "text": "\"Where it began\u2026 I can't begin to know it\u2026 but then I know it's growing strong\u2026\"",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "That's me, clumsily belting out a number by Neil Diamond. Arguably the best sing-a-long song in pop history. Sweet Caroline. It was partly her that inspired me to start something new in life... amongst other lame excuses for what I did back in February\u2026 i.e. to start learning to play the guitar.",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "It would help me keep the mind working, avoid Alzheimer's, beat mid-life crisis... reasons to justify buying a strum instrument. But the wisdom behind my decision is actually quite dark\u2026 eating at my sub conscience\u2026 playing with my psyche\u2026",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "Let's go back several years. Cottage country, full moon, open-pit fire burning, five men and one guitar. One from the group would start plucking away, filling the night air with heavenly sound. Another would take over, and a classic tune from the 80s' would stir our hearts. The next friend would perform a folk number, bringing cheer around the circle. And then the melodious first section of 'Stairway to Heaven' was played by another homeboy. Next... Me? Let me express how glad I was the camp-fire flames did well to disguise my red face.",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "Now let's flashback further, way back to when I was an adolescent living in Jakarta. One of the factors that separated the \"anak gaul\" (cool kids) from the \"anak kuper\", nerds, was the ability to flaunt their strumming skills. The anak-gauls would steal the limelight, have many friends, get respect from their peers and teachers, as well as have a list of secret admirers. I'm very grateful that I eventually married, 'cause there was no way I could serenade girls back then.",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "I have recently consulted with my musically inclined sister, Mimi. She told me she preferred playing the ukulele to the guitar, simply because her hands were too small for the larger instrument. That struck a chord - no pun intended. Sister = genes = hands = small = problem. Connect the dots and I realized why I was at a disadvantage! Navigating fingers between the frets is hard enough, let alone create chords with stubby claws!",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "To make my point, just bringing together the C major chord is a far stretch for me. Here's the evidence...",
+      "style": ""
+    },
+    {
+      "type": "img",
+      "src": "../_Media/guitar_med.jpeg",
+      "alt": "guitar",
+      "width": "430",
+      "height": "286"
+    },
+    {
+      "type": "p",
+      "text": "It has been almost nine months since I walked out the doors of Long & McQuade, proudly carrying a hard case containing an acoustic Fender. Sadly though I've only learned two songs since then, and not very well at that. What's the other song you wonder? Well I'm glad you asked. My other piece is a hit tune from The Eagles\u2026",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "\"It's another tequila sunrise\u2026 this ol' world still looks the same\u2026 another frieeend\u2026 aaoooowww\u2026\"",
+      "style": ""
+    },
+    {
+      "type": "p",
+      "text": "September 2012",
+      "style": ""
+    }
+  ]
+}

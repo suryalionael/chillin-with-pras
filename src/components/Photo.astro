@@ -1,0 +1,35 @@
+---
+// One photograph, sized by its own proportions (`--ar`) so layouts can keep
+// rows level and cap tall images to the viewport without cropping them.
+// fit="cover" crops to a shared aspect band (used for archive previews).
+import { Image } from 'astro:assets';
+import { findImage } from '../lib/images';
+
+const {
+  file,
+  alt = '',
+  sizes,
+  widths = [640, 960, 1280, 1720],
+  loading = 'lazy',
+  fit = 'natural',
+  minAr = 0.85,
+  maxAr = 1.6,
+  class: cls,
+} = Astro.props;
+
+const src = findImage(file);
+const natural = src.width / src.height;
+const ar = fit === 'cover' ? Math.min(maxAr, Math.max(minAr, natural)) : natural;
+---
+
+<Image
+  src={src}
+  alt={alt}
+  widths={widths}
+  sizes={sizes}
+  loading={loading}
+  decoding="async"
+  fetchpriority={loading === 'eager' ? 'high' : undefined}
+  class:list={['photo', cls]}
+  style={`--ar:${ar.toFixed(4)}`}
+/>
