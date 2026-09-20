@@ -1,0 +1,122 @@
+---
+import type { StorySummary } from '../../lib/cms/db.ts';
+import { SECTION_LABEL, SECTION_PATH } from '../../lib/cms/sections.ts';
+
+interface Props {
+  stories: StorySummary[];
+  kind: 'draft' | 'published';
+  emptyText: string;
+}
+const { stories, kind, emptyText } = Astro.props;
+
+const utc = (iso: string) => new Date(iso).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' }) + ' UTC';
+---
+
+{
+  stories.length === 0 ? (
+    <p class="story-empty">{emptyText}</p>
+  ) : (
+    <ul class="story-list">
+      {stories.map((s) => (
+        <li class="story-row">
+          <div class="story-row__main">
+            <a class="story-row__title" href={`/admin/stories/${s.id}/edit/`}>
+              {s.title.trim() !== '' ? s.title : <em>Untitled story</em>}
+            </a>
+            <p class="story-row__meta">
+              <span>{SECTION_LABEL[s.section]}</span>
+              {kind === 'published' && s.slug && <span class="story-row__url">{SECTION_PATH[s.section]}{s.slug}/</span>}
+            </p>
+          </div>
+          <div class="story-row__side">
+            {kind === 'published' && s.publishedAt && <span class="story-row__hand">{s.publishedAt}</span>}
+            {s.hasUnpublishedChanges && <span class="story-row__flag">Unpublished changes</span>}
+            <span class="story-row__time">
+              Edited <time data-local datetime={s.draftUpdatedAt}>{utc(s.draftUpdatedAt)}</time>
+            </span>
+          </div>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+<style>
+  .story-empty {
+    padding: 1.5rem 0;
+    font-size: 1.25rem;
+    font-style: italic;
+    color: var(--ink-soft);
+    border-top: 1px solid var(--line);
+  }
+  .story-list {
+    list-style: none;
+    padding: 0;
+    border-top: 1px solid var(--line);
+  }
+  .story-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem 2rem;
+    padding: 1.25rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .story-row__title {
+    display: inline-block;
+    padding: 0.2rem 0;
+    font-family: var(--serif);
+    font-size: 1.7rem;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  .story-row__title:hover {
+    color: var(--accent-warm);
+  }
+  .story-row__title em {
+    font-weight: 500;
+    color: var(--ink-soft);
+  }
+  .story-row__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+  }
+  .story-row__url {
+    color: var(--ink-faint);
+    word-break: break-all;
+  }
+  .story-row__side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.15rem;
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+    text-align: right;
+    flex: none;
+  }
+  .story-row__hand {
+    font-family: var(--hand);
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--accent-warm);
+  }
+  .story-row__flag {
+    font-weight: 600;
+    color: var(--accent-warm);
+  }
+  @media (max-width: 640px) {
+    .story-row {
+      flex-direction: column;
+    }
+    .story-row__side {
+      align-items: flex-start;
+      text-align: left;
+    }
+  }
+</style>

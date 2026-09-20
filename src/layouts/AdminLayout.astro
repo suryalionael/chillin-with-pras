@@ -1,0 +1,219 @@
+---
+// Admin shell. Shares the public site's palette and type (tokens from
+// global.css) but is a quieter, more functional surface: a writing desk, not a
+// copy of the public pages. Never indexed, never cached (middleware also
+// enforces both with headers).
+import '@fontsource/cormorant-garamond/500.css';
+import '@fontsource/cormorant-garamond/500-italic.css';
+import '@fontsource/cormorant-garamond/600.css';
+import '@fontsource/caveat/400.css';
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/600.css';
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+}
+const { title = 'Admin' } = Astro.props;
+const admin = Astro.locals.admin;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <meta name="theme-color" content="#F7F4ED" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title} — Chillin’ with Pras</title>
+  </head>
+  <body class="admin">
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="admin-bar">
+      <div class="admin-bar__row">
+        <a class="admin-bar__mark" href="/admin/">
+          <span class="admin-bar__name">Chillin’ with Pras</span>
+          <span class="admin-bar__hand">admin</span>
+        </a>
+        <nav class="admin-bar__nav" aria-label="Admin">
+          <a href="/" target="_blank" rel="noopener">View site<span aria-hidden="true"> ↗</span></a>
+          {admin && <span class="admin-bar__who" title={`Signed in as ${admin.email}`}>{admin.email}</span>}
+          {admin?.source === 'dev-bypass' && <span class="admin-bar__dev" title="Local development: Cloudflare Access is not in front of this server.">local dev</span>}
+          {admin?.source === 'cloudflare-access' && <a href="/cdn-cgi/access/logout">Sign out</a>}
+        </nav>
+      </div>
+    </header>
+    <main id="main" class="admin-main">
+      <slot />
+    </main>
+  </body>
+</html>
+
+<style is:global>
+  .admin {
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  .admin-bar {
+    border-bottom: 1px solid var(--line);
+    background: var(--paper);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+  .admin-bar__row {
+    max-width: 62rem;
+    margin: 0 auto;
+    padding: 0.85rem var(--gutter);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .admin-bar__mark {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.7rem;
+    white-space: nowrap;
+  }
+  .admin-bar__name {
+    font-family: var(--serif);
+    font-size: 1.45rem;
+    font-weight: 600;
+  }
+  .admin-bar__hand {
+    font-family: var(--hand);
+    font-size: 1.5rem;
+    color: var(--accent-warm);
+  }
+  .admin-bar__nav {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+  }
+  .admin-bar__nav a {
+    padding: 0.75rem 0;
+    white-space: nowrap;
+  }
+  .admin-bar__nav a:hover {
+    color: var(--ink);
+  }
+  .admin-bar__who {
+    max-width: 16rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .admin-bar__dev {
+    font-family: var(--hand);
+    font-size: 1.3rem;
+    color: var(--accent-warm);
+    transform: rotate(-2deg);
+  }
+  @media (max-width: 640px) {
+    .admin-bar__who {
+      display: none;
+    }
+    .admin-bar__name {
+      font-size: 1.3rem;
+    }
+    .admin-bar__hand {
+      font-size: 1.3rem;
+    }
+    .admin-bar__nav {
+      gap: 0.9rem;
+    }
+  }
+  @media (max-width: 480px) {
+    .admin-bar__hand,
+    .admin-bar__nav a span[aria-hidden] {
+      display: none;
+    }
+    .admin-bar__name {
+      font-size: 1.15rem;
+    }
+    .admin-bar__nav {
+      gap: 0.75rem;
+      font-size: 0.9rem;
+    }
+    .admin-bar__dev {
+      font-size: 1.1rem;
+    }
+  }
+
+  .admin-main {
+    max-width: 62rem;
+    margin: 0 auto;
+    padding: clamp(2rem, 6vw, 4rem) var(--gutter) 6rem;
+  }
+
+  /* buttons */
+  .admin-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 48px;
+    padding: 0.65rem 1.4rem;
+    font-family: var(--sans);
+    font-size: 1rem;
+    font-weight: 600;
+    border: 1px solid var(--ink);
+    border-radius: 2px;
+    background: var(--ink);
+    color: var(--paper);
+    cursor: pointer;
+    transition: background 0.2s var(--ease-out), color 0.2s var(--ease-out);
+  }
+  .admin-btn:hover {
+    background: var(--accent-warm);
+    border-color: var(--accent-warm);
+  }
+  .admin-btn--quiet {
+    background: transparent;
+    color: var(--ink);
+  }
+  .admin-btn--quiet:hover {
+    background: var(--paper-deep);
+    color: var(--ink);
+    border-color: var(--ink);
+  }
+  .admin-btn[disabled],
+  .admin-btn[aria-disabled='true'] {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .admin-notice {
+    margin-top: 2rem;
+    padding: 1.25rem 1.5rem;
+    border-left: 3px solid var(--accent-warm);
+    background: var(--paper-deep);
+    font-size: 1.15rem;
+    line-height: 1.6;
+  }
+  .admin-kicker {
+    font-family: var(--sans);
+    font-size: var(--fs-label);
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+</style>
+
+<script>
+  // Show timestamps in the reader's local time (the server renders UTC).
+  document.querySelectorAll<HTMLTimeElement>('time[data-local]').forEach((t) => {
+    const d = new Date(t.dateTime);
+    if (!Number.isNaN(d.getTime())) t.textContent = d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  });
+</script>

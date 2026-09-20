@@ -211,6 +211,39 @@ await import('playwright').then(async ({ chromium }) => {
     report(res.status === 404, `${url} returns 404`, `got ${res.status}`);
   }
 
+  // ---------- 5. Admin surface (production build): nothing dynamic leaks, nothing opens ----------
+  // No CMS credentials exist in this environment, so every admin request must be denied.
+  {
+    const adminUrls = ['/admin/', '/admin/stories/new/', '/api/admin/whoami/', '/api/admin/stories/'];
+    for (const url of adminUrls) {
+      const res = await fetch(base + url, { headers: { 'cf-access-jwt-assertion': 'eyJhbGciOiJSUzI1NiJ9.e30.forged' } });
+      report([401, 403, 503].includes(res.status), `admin denied without valid auth ${url}`, `got ${res.status}`);
+      report(res.headers.get('cache-control') === 'no-store' && /noindex/.test(res.headers.get('x-robots-tag') ?? ''), `admin response is no-store + noindex ${url}`);
+    }
+    const create = await fetch(base + '/api/admin/stories/', { method: 'POST', headers: { 'content-type': 'application/json', origin: base }, body: '{}' });
+    report(create.status !== 201 && create.status !== 200, 'unauthenticated story creation is refused', `got ${create.status}`);
+
+    // public pages must never be touched by the admin gate
+    const pub = await fetch(base + '/');
+    report(pub.status === 200 && !pub.headers.get('x-robots-tag'), 'public pages are untouched by the admin gate');
+  }
+
+  // the static output contains exactly the public site: no admin/api files, 39 pages, no sitemap leakage
+  {
+    const leaked = [];
+    (function scan(dir) {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, e.name);
+        if (/(^|\/)(admin|api)$/.test(full) ) leaked.push(full);
+        if (e.isDirectory()) scan(full);
+      }
+    })(dist);
+    report(leaked.length === 0, 'no admin/api output in the static build', leaked.slice(0, 3).join(', '));
+    report(allHtml.length === 39, 'static build has exactly 39 pages', `found ${allHtml.length}`);
+    const sitemap = fs.readFileSync(path.join(dist, 'sitemap-0.xml'), 'utf8');
+    report(!/\/(admin|api)\//.test(sitemap), 'sitemap excludes admin/api');
+  }
+
   // header nav: never wraps to more than one line at any width
   for (const width of [390, 768, 900, 901, 1024, 1380]) {
     const page = await browser.newPage({ viewport: { width, height: 800 } });

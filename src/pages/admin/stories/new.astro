@@ -1,0 +1,122 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { getEnv } from '../../../lib/cms/runtime.ts';
+import { createStory, type D1Like } from '../../../lib/cms/db.ts';
+import { isSection } from '../../../lib/cms/schema.ts';
+import { authorizeAdminRequest } from '../../../lib/cms/guard.ts';
+import { SECTION_LABEL } from '../../../lib/cms/sections.ts';
+
+export const prerender = false;
+
+// A story is only created by an explicit POST (never by a GET), so links,
+// prefetching or cross-site navigation can't create drafts.
+let error: string | null = null;
+if (Astro.request.method === 'POST') {
+  const env = await getEnv();
+  const auth = authorizeAdminRequest({ locals: Astro.locals, request: Astro.request }, env.ADMIN_EMAIL);
+  if (!auth.ok) return auth.response;
+
+  const section = (await Astro.request.formData()).get('section');
+  if (!isSection(section)) {
+    error = 'Choose where this story belongs.';
+  } else {
+    try {
+      const story = await createStory(env.DB as unknown as D1Like, { section });
+      return Astro.redirect(`/admin/stories/${story.id}/edit/`, 303);
+    } catch (e) {
+      console.error('admin: could not create story', e instanceof Error ? e.message : e);
+      error = 'The story could not be created. Please try again.';
+    }
+  }
+}
+---
+
+<AdminLayout title="New story">
+  <p class="admin-kicker"><a href="/admin/">← All stories</a></p>
+  <h1 class="new-title">New story</h1>
+  <p class="new-lede">Where should it live? You can write first and decide later; the section is locked only when you publish.</p>
+
+  {error && <p class="admin-notice" role="alert">{error}</p>}
+
+  <form method="post" class="new-form">
+    <fieldset>
+      <legend class="admin-kicker">Section</legend>
+      <label class="new-choice">
+        <input type="radio" name="section" value="observe" checked />
+        <span class="new-choice__name">{SECTION_LABEL.observe}</span>
+        <span class="new-choice__hint">Observations and travel notes</span>
+      </label>
+      <label class="new-choice">
+        <input type="radio" name="section" value="show" />
+        <span class="new-choice__name">{SECTION_LABEL.show}</span>
+        <span class="new-choice__hint">Photography-led projects</span>
+      </label>
+    </fieldset>
+    <button class="admin-btn" type="submit">Create draft</button>
+  </form>
+</AdminLayout>
+
+<style>
+  .new-title {
+    margin-top: 1rem;
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(2.6rem, 7vw, 4rem);
+    line-height: 1.05;
+  }
+  .new-lede {
+    margin-top: 1rem;
+    max-width: 36rem;
+    font-size: 1.3rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+  }
+  .new-form {
+    margin-top: 2.5rem;
+    display: grid;
+    gap: 2rem;
+    justify-items: start;
+    max-width: 36rem;
+  }
+  fieldset {
+    border: 0;
+    padding: 0;
+    width: 100%;
+    display: grid;
+    gap: 0.75rem;
+  }
+  legend {
+    margin-bottom: 0.5rem;
+  }
+  .new-choice {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 1rem;
+    align-items: baseline;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 2px;
+    cursor: pointer;
+  }
+  .new-choice:has(input:checked) {
+    border-color: var(--ink);
+    background: var(--paper-deep);
+  }
+  .new-choice input {
+    grid-row: span 2;
+    width: 1.2rem;
+    height: 1.2rem;
+    accent-color: var(--accent-warm);
+  }
+  .new-choice__name {
+    font-family: var(--serif);
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+  .new-choice__hint {
+    grid-column: 2;
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+  }
+</style>

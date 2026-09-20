@@ -1,0 +1,164 @@
+---
+import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import { getEnv } from '../../../../lib/cms/runtime.ts';
+import { getStory, type D1Like, type Story } from '../../../../lib/cms/db.ts';
+import { isUuid } from '../../../../lib/cms/api.ts';
+import { SECTION_LABEL, SECTION_PATH } from '../../../../lib/cms/sections.ts';
+
+export const prerender = false;
+
+const id = Astro.params.id;
+let story: Story | null = null;
+let loadError = false;
+if (isUuid(id)) {
+  try {
+    story = await getStory((await getEnv()).DB as unknown as D1Like, id);
+  } catch (e) {
+    console.error('admin edit: could not load story', e instanceof Error ? e.message : e);
+    loadError = true;
+  }
+}
+if (!story) Astro.response.status = loadError ? 500 : 404;
+
+const blocks = story?.draft.body.content ?? [];
+const count = (t: string) => blocks.filter((b) => b.type === t).length;
+---
+
+<AdminLayout title={story?.draft.title || 'Untitled story'}>
+  {
+    !story ? (
+      <>
+        <p class="admin-kicker"><a href="/admin/">← All stories</a></p>
+        <h1 class="ed-missing">{loadError ? 'This story could not be loaded.' : 'Story not found.'}</h1>
+      </>
+    ) : (
+      <div data-story-id={story.id} data-draft-rev={story.draftRev}>
+        <p class="admin-kicker"><a href="/admin/">← All stories</a></p>
+
+        <div class="ed-bar">
+          <p class="ed-status">
+            <span class="ed-chip">{story.status === 'published' ? 'Published' : 'Draft'}</span>
+            <span>Revision {story.draftRev}</span>
+            {story.hasUnpublishedChanges && <span class="ed-flag">Unpublished changes</span>}
+          </p>
+          <div class="ed-actions">
+            <a class="admin-btn admin-btn--quiet" href={`/admin/stories/${story.id}/preview/`}>Preview</a>
+            <span class="admin-btn" aria-disabled="true" title="Publishing arrives in a later phase">Publish</span>
+          </div>
+        </div>
+
+        <textarea class="ed-title" rows="1" readonly placeholder="Title" aria-label="Title">{story.draft.title}</textarea>
+        <textarea class="ed-subtitle" rows="1" readonly placeholder="Subtitle" aria-label="Subtitle">{story.draft.subtitle}</textarea>
+
+        <p class="admin-notice">
+          <strong>The writing surface arrives in the next phase.</strong> This page is the shell: the story exists,
+          autosave and publishing are already served by the API
+          (<code>PUT /api/admin/stories/{story.id}/draft/</code>), and the editor will plug in here.
+        </p>
+
+        <dl class="ed-facts">
+          <div><dt>Section</dt><dd>{SECTION_LABEL[story.section]}</dd></div>
+          <div><dt>Address</dt><dd>{story.slug ? `${SECTION_PATH[story.section]}${story.slug}/` : 'Chosen when you publish'}</dd></div>
+          <div><dt>Content</dt><dd>{blocks.length} blocks · {count('image')} images</dd></div>
+          <div><dt>Last saved</dt><dd><time data-local datetime={story.draftUpdatedAt}>{story.draftUpdatedAt}</time></dd></div>
+        </dl>
+      </div>
+    )
+  }
+</AdminLayout>
+
+<style>
+  .ed-missing {
+    margin-top: 1rem;
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 2.6rem;
+  }
+  .ed-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 1.25rem 0 clamp(2rem, 5vw, 3.5rem);
+  }
+  .ed-status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 1rem;
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+  }
+  .ed-chip {
+    padding: 0.2rem 0.7rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .ed-flag {
+    font-weight: 600;
+    color: var(--accent-warm);
+  }
+  .ed-actions {
+    display: flex;
+    gap: 0.75rem;
+  }
+  .ed-title,
+  .ed-subtitle {
+    display: block;
+    width: 100%;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    background: transparent;
+    font-family: var(--serif);
+    color: var(--ink);
+    outline-offset: 4px;
+    resize: none;
+    field-sizing: content; /* grows with the text, so long titles wrap instead of clipping */
+  }
+  .ed-title {
+    padding: 0.4rem 0;
+    font-size: clamp(2.6rem, 7vw, 4.25rem);
+    font-weight: 500;
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+  }
+  .ed-subtitle {
+    margin-top: 0.75rem;
+    padding: 0.4rem 0;
+    font-size: 1.7rem;
+    font-style: italic;
+    color: var(--ink-soft);
+  }
+  .ed-title::placeholder,
+  .ed-subtitle::placeholder {
+    color: var(--ink-faint);
+  }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.85em;
+    word-break: break-all;
+  }
+  .ed-facts {
+    margin-top: 2.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+    gap: 1.25rem 2rem;
+    font-family: var(--sans);
+  }
+  .ed-facts dt {
+    font-size: var(--fs-label);
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .ed-facts dd {
+    margin-top: 0.25rem;
+    font-size: 1.05rem;
+    word-break: break-word;
+  }
+</style>

@@ -1,0 +1,83 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import StoryList from '../../components/admin/StoryList.astro';
+import { getEnv } from '../../lib/cms/runtime.ts';
+import { listStories, type D1Like, type StorySummary } from '../../lib/cms/db.ts';
+
+// Server-rendered on every request; never part of the static build.
+export const prerender = false;
+
+let drafts: StorySummary[] = [];
+let published: StorySummary[] = [];
+let loadError: string | null = null;
+try {
+  const env = await getEnv();
+  const all = await listStories(env.DB as unknown as D1Like);
+  drafts = all.filter((s) => s.status === 'draft');
+  published = all
+    .filter((s) => s.status === 'published')
+    .sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''));
+} catch (error) {
+  console.error('admin dashboard: could not load stories', error instanceof Error ? error.message : error);
+  loadError = import.meta.env.DEV
+    ? 'The CMS database is not ready. Run “npm run db:migrate:local”, then reload.'
+    : 'Stories could not be loaded. Please try again in a moment.';
+}
+---
+
+<AdminLayout title="Stories">
+  <header class="dash-head">
+    <div>
+      <p class="admin-kicker">Chillin’ with Pras</p>
+      <h1 class="dash-title">Admin</h1>
+    </div>
+    <a class="admin-btn" href="/admin/stories/new/"><span aria-hidden="true">+</span> New Story</a>
+  </header>
+
+  {loadError && <p class="admin-notice" role="alert">{loadError}</p>}
+
+  <section class="dash-section" aria-labelledby="drafts-h">
+    <h2 id="drafts-h" class="dash-h">Drafts <span class="dash-count">{drafts.length}</span></h2>
+    <StoryList stories={drafts} kind="draft" emptyText="No drafts yet. Start with a new story." />
+  </section>
+
+  <section class="dash-section" aria-labelledby="published-h">
+    <h2 id="published-h" class="dash-h">Published <span class="dash-count">{published.length}</span></h2>
+    <StoryList stories={published} kind="published" emptyText="Nothing published from here yet. The 35 original stories live in the site itself and are not listed." />
+  </section>
+</AdminLayout>
+
+<style>
+  .dash-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1.25rem;
+    margin-bottom: clamp(2.5rem, 6vw, 4rem);
+  }
+  .dash-title {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(3rem, 8vw, 4.75rem);
+    line-height: 1;
+    letter-spacing: -0.015em;
+  }
+  .dash-section {
+    margin-top: clamp(2.5rem, 5vw, 3.5rem);
+  }
+  .dash-h {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 2.1rem;
+  }
+  .dash-count {
+    font-family: var(--hand);
+    font-size: 1.7rem;
+    color: var(--accent-warm);
+  }
+</style>
