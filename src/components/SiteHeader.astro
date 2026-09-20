@@ -1,0 +1,329 @@
+---
+import site, { SECTIONS, articlesIn } from '../lib/site.mjs';
+
+const current = Astro.props.current ?? '';
+const nav = [
+  { label: 'Home', path: '/', key: 'home' },
+  { label: 'To Observe & Report', path: SECTIONS.observe.path, key: 'observe' },
+  { label: 'To Show & Tell', path: SECTIONS.show.path, key: 'show' },
+];
+
+function isActive(key) {
+  if (key === 'home') return current === '/';
+  if (key === 'observe') return current.startsWith(SECTIONS.observe.path);
+  if (key === 'show') return current.startsWith(SECTIONS.show.path);
+  return false;
+}
+---
+
+<header class="site-header">
+  <div class="container site-header__row">
+    <a class="site-mark" href="/" aria-label="Chillin with Pras — home">
+      <span class="site-mark__serif">Chillin’ with Pras</span>
+      <span class="site-mark__hand">the archive</span>
+    </a>
+
+    <nav class="site-nav" aria-label="Primary">
+      <ul>
+        {
+          nav.map((item) => (
+            <li>
+              <a class:list={['site-nav__link', { 'is-current': isActive(item.key) }]} href={item.path} aria-current={isActive(item.key) ? 'page' : undefined}>
+                {item.label}
+                <span class="site-nav__underscore" aria-hidden="true"></span>
+              </a>
+            </li>
+          ))
+        }
+        <li>
+          <a class="site-nav__link site-nav__link--rss" href="/rss.xml">
+            RSS
+            <span class="site-nav__underscore" aria-hidden="true"></span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <details class="site-menu">
+      <summary class="site-menu__toggle">
+        <span class="label">Menu</span>
+      </summary>
+      <div class="site-menu__panel">
+        <a class="site-menu__item" href="/" aria-current={current === '/' ? 'page' : undefined}>Home</a>
+        <a class="site-menu__group" href={SECTIONS.observe.path} aria-current={current === SECTIONS.observe.path ? 'page' : undefined}>To Observe &amp; Report</a>
+        {
+          articlesIn('observe').map((a) => (
+            <a class="site-menu__item site-menu__item--sub" href={a.path} aria-current={current === a.path ? 'page' : undefined}>{a.title}</a>
+          ))
+        }
+        <a class="site-menu__group" href={SECTIONS.show.path} aria-current={current === SECTIONS.show.path ? 'page' : undefined}>To Show &amp; Tell</a>
+        {
+          articlesIn('show').map((a) => (
+            <a class="site-menu__item site-menu__item--sub" href={a.path} aria-current={current === a.path ? 'page' : undefined}>{a.title}</a>
+          ))
+        }
+        <a class="site-menu__item" href="/rss.xml">RSS feed</a>
+      </div>
+    </details>
+  </div>
+</header>
+
+<script>
+  // Add scrolled class to header for shadow
+  const header = document.querySelector('.site-header');
+  if (header) {
+    let ticking = false;
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          header.classList.toggle('scrolled', window.scrollY > 20);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }, { passive: true });
+  }
+
+  // Escape closes the mobile menu
+  document.addEventListener('keydown', (e) => {
+    const menu = document.querySelector('.site-menu');
+    if (e.key === 'Escape' && menu && menu.open) {
+      menu.open = false;
+      menu.querySelector('summary')?.focus();
+    }
+  });
+</script>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid var(--line);
+    background: var(--paper);
+    transition: box-shadow 0.3s var(--ease-out);
+  }
+
+  .site-header.scrolled {
+    box-shadow: 0 2px 10px -2px rgba(38, 35, 31, 0.15);
+  }
+
+  .site-header__row {
+    padding-block: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+  }
+
+  .site-mark {
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.8rem;
+    line-height: 1;
+  }
+
+  .site-mark__serif {
+    font-family: var(--serif);
+    font-size: 1.75rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  .site-mark__hand {
+    font-family: var(--hand);
+    font-size: 1.25rem;
+    color: var(--accent-warm);
+  }
+
+  .site-nav ul {
+    list-style: none;
+    display: flex;
+    gap: clamp(1.25rem, 2.6vw, 2.5rem);
+    margin: 0;
+    padding: 0;
+    align-items: center;
+  }
+
+  .site-nav__link {
+    position: relative;
+    font-family: var(--sans);
+    white-space: nowrap;
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: var(--ink-soft);
+    padding: 0.7rem 0.1rem 0.6rem;
+    transition: color 0.2s var(--ease-out);
+  }
+
+  .site-nav__link:hover {
+    color: var(--ink);
+  }
+
+  .site-nav__link:focus {
+    outline: none;
+  }
+  .site-nav__link:focus-visible .site-nav__underscore {
+    transform: scaleX(1);
+  }
+
+  .site-nav__link--rss {
+    color: var(--accent-warm);
+  }
+
+  .site-nav__underscore {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    width: 100%;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s var(--ease-out);
+  }
+
+  .site-nav__link:hover .site-nav__underscore,
+  .site-nav__link.is-current .site-nav__underscore {
+    transform: scaleX(1);
+  }
+
+  .site-nav__link.is-current {
+    color: var(--ink);
+  }
+
+  .site-menu {
+    display: none;
+  }
+
+  @media (max-width: 1080px) {
+    .site-mark__hand {
+      display: none;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .site-header__row {
+      gap: 0.75rem;
+    }
+    .site-mark__serif {
+      font-size: 1.35rem;
+    }
+  }
+
+  @media (max-width: 540px) {
+    .site-mark__hand {
+      display: none;
+    }
+    .site-mark__serif {
+      font-size: 1.5rem;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .site-nav {
+      display: none;
+    }
+
+    .site-menu {
+      display: block;
+      position: relative;
+    }
+
+    .site-menu__toggle {
+      list-style: none;
+      cursor: pointer;
+      padding: 0.6rem 1rem;
+      border: 1px solid var(--line-strong);
+      user-select: none;
+      background: var(--paper);
+      border-radius: 4px;
+      min-width: 48px;
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.2s var(--ease-out), background 0.2s var(--ease-out);
+    }
+    .site-menu__toggle:hover {
+      border-color: var(--accent-warm);
+      background: var(--paper-deep);
+    }
+    .site-menu__toggle:focus-visible {
+      outline: 2px solid var(--accent-warm);
+      outline-offset: 2px;
+    }
+
+    .site-menu__toggle::-webkit-details-marker {
+      display: none;
+    }
+
+    .site-menu__panel {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 0.75rem);
+      width: min(24rem, 88vw);
+      max-height: min(70vh, 46rem);
+      overflow: auto;
+      background: var(--paper);
+      border: 1px solid var(--line-strong);
+      box-shadow: 0 24px 50px -20px rgba(38, 35, 31, 0.4);
+      padding: 1.5rem 1.75rem 1.75rem;
+      z-index: 30;
+      display: grid;
+      gap: 0.25rem;
+    }
+
+    .site-menu__group {
+      margin-top: 1.4rem;
+      padding: 0.6rem 0;
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      font-family: var(--serif);
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: var(--ink);
+      border-bottom: 1px solid var(--line-strong);
+    }
+
+    .site-menu__item {
+      font-family: var(--serif);
+      font-size: 1.25rem;
+      font-weight: 500;
+      line-height: 1.4;
+      padding: 0.55rem 0;
+      color: var(--ink);
+      border-bottom: 1px dotted var(--line);
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      transition: color 0.2s var(--ease-out);
+    }
+    .site-menu__item:hover,
+    .site-menu__group:hover {
+      color: var(--accent-warm);
+    }
+    .site-menu__item:focus-visible,
+    .site-menu__group:focus-visible {
+      outline: 2px solid var(--accent-warm);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+
+    .site-menu__item--sub {
+      font-size: 1.15rem;
+      color: var(--ink-soft);
+      padding-left: 0.9rem;
+    }
+
+    /* where you are */
+    .site-menu__panel [aria-current='page'] {
+      color: var(--accent-warm);
+      box-shadow: inset 3px 0 0 var(--accent-warm);
+      padding-left: 0.9rem;
+    }
+  }
+</style>

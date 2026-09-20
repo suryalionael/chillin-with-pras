@@ -1,0 +1,215 @@
+albion1_med.jpeg	observe/cross-country-chillin	Albion1
+amsterdam.jpeg	show/windows-to-the-world	Amsterdam
+aneka_rasa_on_warmoesstraat_med.jpeg	show/food-for-thought	Aneka Rasa on Warmoesstraat
+belgian_waffles_med.jpeg	show/food-for-thought	Belgian Waffles
+blank_canvas_med.jpeg	show/the-artists-den	Blank Canvas
+boardwalk_med.jpeg	show/the-artists-den	Boardwalk
+bondi-nsw.jpeg	show/windows-to-the-world	Bondi NSW
+brooklyn.jpeg	show/windows-to-the-world	Brooklyn
+brugge-i.jpeg	show/windows-to-the-world	Brugge I
+brugge-ii.jpeg	show/windows-to-the-world	Brugge II
+central-station-luxembourg.jpeg	show/windows-to-the-world	Central Station, Luxembourg
+chicago.jpeg	show/windows-to-the-world	Chicago
+collingwood-on.jpeg	show/windows-to-the-world	Collingwood ON
+crab_swich__grilled_calamar_med.jpeg	show/food-for-thought	Crab S'wich & Grilled Calamari
+dbowie_med.jpeg	observe/exhibit-starman	DBowie
+delft.jpeg	show/windows-to-the-world	Delft
+distillery-district.jpeg	show/windows-to-the-world	Distillery District
+distillery-toronto.jpeg	show/windows-to-the-world	Distillery Toronto
+fashion-district.jpeg	show/windows-to-the-world	Fashion District
+forbidden_fruit_med.jpeg	observe/the-forbidden-fruit	Forbidden Fruit
+fridge_med.jpeg	observe/frozen-in-time	Fridge
+fries_and_mayo_med.jpeg	show/food-for-thought	Fries and Mayo
+golf-1_med.jpeg	observe/game-is-no-walk-in-the-park	golf 1
+golf-2_med.jpeg	observe/game-is-no-walk-in-the-park	golf 2
+gopr0014.jpeg	observe/artificial-worlds-and-natur	gopr0014
+green__outline_med.jpeg	show/the-artists-den	Green & Outline
+gudeg_cooked_jackfruit_-_med.jpeg	show/food-for-thought	Gudeg, Cooked Jackfruit - Jogjakarta
+guitar_med.jpeg	observe/my-guitar-gently-weeps	guitar
+habit_med.jpeg	observe/creatures-of-habit	habit
+heart-1_med.jpeg	observe/mend-my-broken-heart	heart-1
+heart-2_med.jpeg	observe/mend-my-broken-heart	heart-2
+high-line-ny.jpeg	show/windows-to-the-world	High Line, NY
+high-line-nyc.jpeg	show/windows-to-the-world	High Line, NYC
+honey_and_yoghurt_-_greece_med.jpeg	show/food-for-thought	Honey and Yoghurt - Greece
+image-1_2_med.jpeg	observe/the-wall	image-1 copy
+image-2_med.png	observe/desert-life	
+img_0443_med.jpeg	observe/the-wall	IMG_0443
+img_0470_med.jpeg	observe/south-of-south-of-the-borde	IMG_0470
+img_0476_med.jpeg	observe/south-of-south-of-the-borde	IMG_0476
+img_0479_med.jpeg	observe/south-of-south-of-the-borde	IMG_0479
+img_0542_med.jpeg	observe/south-of-south-of-the-borde	IMG_0542
+img_0559_med.jpeg	observe/south-of-south-of-the-borde	IMG_0559
+img_0587_med.jpeg	observe/south-of-south-of-the-borde	IMG_0587
+img_0592_med.jpeg	observe/fox-on-the-beach	IMG_0592
+img_0595_med.jpeg	observe/south-of-south-of-the-borde	IMG_0595
+img_0618_med.jpeg	observe/fox-on-the-beach	IMG_0618
+img_0651_med.jpeg	observe/detox-diet---an-exercise-in	IMG_0651
+img_0660_med.jpeg	observe/south-of-south-of-the-borde	IMG_0660
+img_0727_med.jpeg	observe/south-of-south-of-the-borde	IMG_0727
+img_0745_med.jpeg	observe/great-white	IMG_0745
+img_0770_med.jpeg	show/the-artists-den	IMG 0770
+img_0781_med.jpeg	observe/south-of-south-of-the-borde	IMG_0781
+img_0817_med.jpeg	observe/south-of-south-of-the-borde	IMG_0817
+img_0819_med.jpeg	observe/south-of-south-of-the-borde	IMG_0819
+img_0830_med.jpeg	observe/south-of-south-of-the-borde	IMG_0830
+img_0854_med.jpeg	observe/south-of-south-of-the-borde	IMG_0854
+img_0866_med.jpeg	observe/south-of-south-of-the-borde	IMG_0866
+img_0881_med.jpeg	observe/south-of-south-of-the-borde	IMG_0881
+img_0883-2_med.jpeg	observe/south-of-south-of-the-borde	IMG_0883
+img_0897_med.jpeg	observe/small-town-hospitality	IMG_0897
+img_0898_med.jpeg	observe/small-town-hospitality	IMG_0898
+img_0902_med.jpeg	observe/small-town-hospitality	IMG_0902
+img_0913_med-2.jpeg	observe/south-of-south-of-the-borde	
+img_1047_med.jpeg	observe/fun-dining-in-the-big-apple	
+img_1054_med.jpeg	observe/fun-dining-in-the-big-apple	
+img_1192_med.jpeg	observe/fun-dining-in-the-big-apple	
+img_1196_med.jpeg	observe/fun-dining-in-the-big-apple	IMG_1196
+img_1246_med.jpeg	observe/fun-dining-in-the-big-apple	
+img_1264_med.jpeg	observe/fun-dining-in-the-big-apple	
+img_1382_med.jpeg	observe/bamboo-music	IMG 1382
+img_1386_2_med.jpeg	observe/bamboo-music	IMG 1386 2
+img_1388_2_med.jpeg	observe/bamboo-music	IMG 1388 2
+img_1390_2_med.jpeg	observe/bamboo-music	IMG 1390 2
+img_1947_med.jpeg	observe/of-golden-bridges-longing	IMG_1947
+img_1951_med.jpeg	observe/of-golden-bridges-longing	IMG_1951
+img_1954_med.jpeg	observe/of-golden-bridges-longing	IMG_1954
+img_1985_med.jpeg	observe/of-golden-bridges-longing	IMG_1985
+img_1999_med.jpeg	observe/of-golden-bridges-longing	IMG_1999
+img_2008_2_med.jpeg	observe/bamboo-music	IMG 2008 2
+img_2012_med.jpeg	observe/of-golden-bridges-longing	IMG_2012
+img_2013_med.jpeg	observe/bamboo-music	IMG_2013
+img_2648_med.jpeg	observe/the-long-goodbye	IMG 2648
+img_2867_med.jpeg	observe/of-golden-bridges-longing	IMG_2867
+introversion_med.jpeg	observe/an-introspection-of-introve	Introversion
+klaten-java.jpeg	show/windows-to-the-world	Klaten Java
+london.jpeg	show/windows-to-the-world	London
+luxembourg.jpeg	show/windows-to-the-world	Luxembourg
+lv1_med.jpeg	observe/artificial-worlds-and-natur	LV1
+lv2_med.jpeg	observe/artificial-worlds-and-natur	LV2
+lv3_med.jpeg	observe/artificial-worlds-and-natur	LV3
+madurodam.jpeg	show/windows-to-the-world	Madurodam
+manhattan-ny.jpeg	show/windows-to-the-world	Manhattan, NY
+master_rider_med.jpeg	observe/life-cycle	Master Rider
+ottawa.jpeg	show/windows-to-the-world	Ottawa
+pasted-file-10_med.png	observe/focus-on-havana	
+pasted-file-11_med.png	observe/desert-life	
+pasted-file-12_med.png	observe/finding-fado	
+pasted-file-13_med.png	observe/finding-fado	
+pasted-file-14_med.png	observe/finding-fado	
+pasted-file-15_med.png	observe/finding-fado	
+pasted-file-16_med.png	observe/desert-life	
+pasted-file-17_med.png	observe/desert-life	thumb P6270791 1024
+pasted-file-2_med.png	observe/morocco-moments	
+pasted-file-3_med.png	observe/morocco-moments	
+pasted-file-4_med.png	observe/morocco-moments	
+pasted-file-5_med.png	observe/morocco-moments	
+pasted-file-6_med.png	observe/morocco-moments	
+pasted-file-7_med.png	observe/unfinished-business	
+pasted-file-8_med.png	observe/finding-fado	
+pasted-file-9_med.png	observe/finding-fado	
+pasted-file_med.png	observe/morocco-moments	
+photo-11_med.jpeg	observe/gone-fishing	photo-11
+prague.jpeg	show/windows-to-the-world	Prague
+pret_a_manger_-_london_med.jpeg	show/food-for-thought	Pret a Manger - London
+pumpkin1_med.jpeg	show/carvin-pumpkin	pumpkin1
+pumpkin2_med.jpeg	show/carvin-pumpkin	pumpkin2
+quebec-city.jpeg	show/windows-to-the-world	Quebec City
+quiet_med.jpeg	observe/an-introspection-of-introve	Quiet
+raw_herring_on_a_bun_med.jpeg	show/food-for-thought	Raw Herring on a Bun
+robert-michales_med.jpeg	observe/street-music	Robert Michales
+rome-railway.jpeg	show/windows-to-the-world	Rome Railway
+roo_on_a_bun_-_sydney_med.jpeg	show/food-for-thought	'Roo on a Bun - Sydney
+rugby3_med.jpeg	observe/satday-nite-lites	Rugby3
+rugby4_med.jpeg	observe/satday-nite-lites	Rugby4
+saung-angklung-udjo-1.jpeg	observe/bamboo-music	saung-angklung-udjo-1
+saung-angklung-udjo-2.jpeg	observe/bamboo-music	saung-angklung-udjo-2
+scn_0002_med.jpeg	observe/the-long-goodbye	SCN 0002
+scn_0010_2_2-2_med.jpeg	show/bringing-bagong-back	SCN_0010 copy copy
+scn_0010_2_2-3_med.jpeg	show/bringing-bagong-back	SCN_0010 copy copy
+scn_0010_2_2_med.jpeg	show/bringing-bagong-back	SCN_0010 copy copy
+scn_0010_2_med.jpeg	show/bringing-bagong-back	SCN_0010 copy
+scn_0010_med.jpeg	show/bringing-bagong-back	SCN_0010
+scn_0010a_med.jpeg	show/bringing-bagong-back	SCN_0010A
+signature_med.jpeg	show/the-artists-den	Signature
+sketch__primer_med.jpeg	show/the-artists-den	Sketch & Primer
+sky_med.jpeg	show/the-artists-den	Sky
+snow-valley-on.jpeg	show/windows-to-the-world	Snow Valley ON
+spawn_med.jpeg	observe/comic-conned	spawn
+sydney-nsw.jpeg	show/windows-to-the-world	Sydney NSW
+thumb_gopr0126_1024_med.jpeg	observe/morocco-moments	thumb GOPR0126 1024
+thumb_gopr0179_1024_med.jpeg	observe/morocco-moments	thumb GOPR0179 1024
+thumb_gopr0182_1024_med.jpeg	observe/morocco-moments	thumb GOPR0182 1024
+thumb_img_2185_1024_med.jpeg	observe/morocco-moments	thumb IMG 2185 1024
+thumb_img_2191_1024_med.jpeg	observe/morocco-moments	thumb IMG 2191 1024
+thumb_img_2195_1024_med.jpeg	observe/morocco-moments	thumb IMG 2195 1024
+thumb_img_2204_1024-2_med.jpeg	observe/morocco-moments	thumb IMG 2204 1024
+thumb_img_2207_1024_med.jpeg	observe/morocco-moments	thumb IMG 2207 1024
+thumb_img_2232_1024_med.jpeg	observe/morocco-moments	thumb IMG 2232 1024
+thumb_img_2255_1024_med.jpeg	observe/morocco-moments	thumb IMG 2255 1024
+thumb_img_2260_1024_med.jpeg	observe/morocco-moments	thumb IMG 2260 1024
+thumb_img_2276_1024_med.jpeg	observe/morocco-moments	thumb IMG 2276 1024
+thumb_img_2296_1024_med.jpeg	observe/morocco-moments	thumb IMG 2296 1024
+thumb_img_2350_1024_med.jpeg	observe/morocco-moments	thumb IMG 2350 1024
+thumb_img_2467_1024_med.jpeg	observe/morocco-moments	thumb IMG 2467 1024
+thumb_img_2542_1024_med.jpeg	observe/morocco-moments	thumb IMG 2542 1024
+thumb_img_2550_1024_med.jpeg	observe/morocco-moments	thumb IMG 2550 1024
+thumb_img_2553_1024_med.jpeg	observe/unfinished-business	thumb IMG 2553 1024
+thumb_img_2559_1024_med.jpeg	observe/unfinished-business	thumb IMG 2559 1024
+thumb_img_2581_1024-2_med.jpeg	observe/unfinished-business	thumb IMG 2581 1024
+thumb_img_3440_1024_med.jpeg	observe/unfinished-business	thumb IMG 3440 1024
+thumb_img_3457_1024_med.jpeg	observe/unfinished-business	thumb IMG 3457 1024
+thumb_img_3462_1024_med.jpeg	observe/unfinished-business	thumb IMG 3462 1024
+thumb_img_3474_1024_med.jpeg	observe/unfinished-business	thumb IMG 3474 1024
+thumb_img_3523_1024_med.jpeg	observe/unfinished-business	thumb IMG 3523 1024
+thumb_img_3593_1024_med.jpeg	observe/unfinished-business	thumb IMG 3593 1024
+thumb_p6250641_1024_med.jpeg	observe/desert-life	thumb P6250641 1024
+thumb_p6260662_1024_med.jpeg	observe/desert-life	thumb P6260662 1024
+thumb_p6260665_1024-2_med.jpeg	observe/desert-life	thumb P6260665 1024
+thumb_p6260713_1024_med.jpeg	observe/desert-life	thumb P6260713 1024
+thumb_p6260728_1024_med.jpeg	observe/desert-life	thumb P6260728 1024
+thumb_p6270765_1024_med.jpeg	observe/desert-life	thumb P6270765 1024
+thumb_p6270777_1024_med.jpeg	observe/desert-life	thumb P6270777 1024
+thumb_p6270779_1024_med.jpeg	observe/desert-life	thumb P6270779 1024
+thumb_p6270791_1024_med.jpeg	observe/desert-life	
+thumb_p6270804_1024-2_med.jpeg	observe/desert-life	thumb P6270804 1024
+thumb_p6270810_1024_med.jpeg	observe/desert-life	thumb P6270810 1024
+thumb_p6280826_1024_med.jpeg	observe/desert-life	thumb P6280826 1024
+thumb_p6280829_1024_med.jpeg	observe/desert-life	thumb P6280829 1024
+thumb_p6280843_1024_med.jpeg	observe/desert-life	thumb P6280843 1024
+thumb_p6280879_1024_med.jpeg	observe/desert-life	thumb P6280879 1024
+thumb_p6280890_1024_med.jpeg	observe/desert-life	thumb P6280890 1024
+thumb_p7010956_1024_med.jpeg	observe/desert-life	thumb P7010956 1024
+thumb_p7010961_1024_med.jpeg	observe/desert-life	thumb P7010961 1024
+thumb_pb110036_1024_med.jpeg	observe/focus-on-havana	thumb PB110036 1024
+thumb_pb110046_1024_med.jpeg	observe/focus-on-havana	thumb PB110046 1024
+thumb_pb110068_1024_med.jpeg	observe/focus-on-havana	thumb PB110068 1024
+thumb_pb130170_1024_med.jpeg	observe/focus-on-havana	thumb PB130170 1024
+thumb_pb130208_1024_med.jpeg	observe/focus-on-havana	thumb PB130208 1024
+thumb_pb130212_1024_med.jpeg	observe/focus-on-havana	thumb PB130212 1024
+thumb_pb130219_1024_med.jpeg	observe/focus-on-havana	thumb PB130219 1024
+thumb_pb130222_1024_med.jpeg	observe/focus-on-havana	thumb PB130222 1024
+thumb_pb130229_1024_med.jpeg	observe/focus-on-havana	thumb PB130229 1024
+thumb_pb130235_1024_med.jpeg	observe/focus-on-havana	thumb PB130235 1024
+thumb_pb130237_1024_med.jpeg	observe/focus-on-havana	thumb PB130237 1024
+thumb_pb130242_1024_med.jpeg	observe/focus-on-havana	thumb PB130242 1024
+thumb_pb130247_1024_med.jpeg	observe/focus-on-havana	thumb PB130247 1024
+thumb_pb130248_1024_med.jpeg	observe/focus-on-havana	thumb PB130248 1024
+thumb_pb130251_1024_med.jpeg	observe/focus-on-havana	thumb PB130251 1024
+thumb_pb140253_1024_med.jpeg	observe/focus-on-havana	thumb PB140253 1024
+thumb_pb140261_1024_med.jpeg	observe/focus-on-havana	thumb PB140261 1024
+thumb_pb140268_1024_med.jpeg	observe/focus-on-havana	thumb PB140268 1024
+thumb_pb140292_1024_med.jpeg	observe/focus-on-havana	thumb PB140292 1024
+thumb_pb140308_1024_med.jpeg	observe/focus-on-havana	thumb PB140308 1024
+thumb_pb140315_1024_med.jpeg	observe/focus-on-havana	thumb PB140315 1024
+thumb_pb140327_1024_med.jpeg	observe/focus-on-havana	
+thumb_pb140329_1024_med.jpeg	observe/focus-on-havana	thumb PB140329 1024
+thumb_pb140384_1024_med.jpeg	observe/focus-on-havana	thumb PB140384 1024
+thumb_pb140385_1024_med.jpeg	observe/focus-on-havana	thumb PB140385 1024
+trees_med.jpeg	show/the-artists-den	Trees
+union-stn-toronto.jpeg	show/windows-to-the-world	Union Stn Toronto
+vienna.jpeg	show/windows-to-the-world	Vienna
+volendam-netherlands.jpeg	show/windows-to-the-world	Volendam, Netherlands
+wa-mozart-apt-vienna.jpeg	show/windows-to-the-world	WA Mozart apt Vienna
+water__sand_med.jpeg	show/the-artists-den	Water & Sand
+wieners_in_wien_med.jpeg	show/food-for-thought	Wieners in Wien

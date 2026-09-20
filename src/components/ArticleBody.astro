@@ -1,0 +1,116 @@
+---
+import { renderSequence } from '../lib/render.mjs';
+import Figure from './Figure.astro';
+
+const { blocks, dateline = '' } = Astro.props;
+const seq = renderSequence(blocks, dateline);
+
+// Rhythm for single photographs: full-width, then inset right, full-width,
+// then inset left — so a long article never repeats the same shape twice.
+const tones = ['wide', 'inset-right', 'wide', 'inset-left'];
+let singles = 0;
+---
+
+<div class="prose">
+  {
+    seq.map((item, idx) => {
+      if (item.type === 'paragraph') {
+        if (item.dateline) {
+          return (
+            <p class="prose__text dateline hand-date" aria-label="Dateline">
+              {item.text}
+            </p>
+          );
+        }
+        if (item.subhead) {
+          return <h2 class="prose__text subhead">{item.text}</h2>;
+        }
+        return <p class="prose__text prose__p">{item.text}</p>;
+      }
+
+      const tone = item.variant === 'single' ? tones[singles++ % tones.length] : 'wide';
+      return (
+        <div class="prose__figure">
+          <Figure variant={item.variant} files={item.files} tone={tone} />
+        </div>
+      );
+    })
+  }
+</div>
+
+<style>
+  .prose {
+    width: 100%;
+    padding-top: 0.5rem;
+  }
+
+  /* text keeps a comfortable measure; photographs use the full width */
+  .prose__text {
+    max-width: var(--read);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .prose__p {
+    font-family: var(--serif);
+    font-size: var(--fs-body);
+    font-weight: 500;
+    line-height: 1.85;
+    margin-bottom: 1.5em;
+    color: var(--ink);
+  }
+
+  .prose__figure {
+    margin: 4.5rem 0 5rem;
+  }
+
+  .subhead {
+    font-family: var(--serif);
+    font-size: 2rem;
+    font-weight: 600;
+    line-height: 1.25;
+    margin-top: 4.5rem;
+    margin-bottom: 1.75rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+  }
+
+  .subhead::before {
+    content: '';
+    flex: none;
+    width: 3rem;
+    height: 1px;
+    background: var(--accent-warm);
+    transform: translateY(-0.25em);
+  }
+
+  /* the prose column margin above a subhead that follows a photograph */
+  .prose__figure + .subhead {
+    margin-top: 0;
+  }
+
+  .dateline {
+    font-size: calc(var(--fs-hand) * 1.2);
+    text-align: right;
+    margin-top: 4rem;
+    line-height: 1.3;
+  }
+
+  @media (max-width: 800px) {
+    .prose__p {
+      font-size: 1.28rem;
+      line-height: 1.8;
+    }
+
+    .subhead {
+      font-size: 1.7rem;
+      margin-top: 3.5rem;
+    }
+
+    .prose__figure {
+      margin: 3rem 0 3.5rem;
+    }
+
+  }
+</style>

@@ -1,0 +1,50 @@
+---
+import Base from '../layouts/Base.astro';
+import EditorialTitle from '../components/EditorialTitle.astro';
+import { SECTIONS } from '../lib/site.mjs';
+---
+
+<Base title="Loss for Words" canonical="https://www.chillinwithpras.com/404.html">
+  <section class="container nf">
+    <p class="label nf__kicker">off the beaten path</p>
+    <EditorialTitle>This page slacked off.</EditorialTitle>
+    <p class="nf__text">
+      Nothing to observe here, nothing to report. The page you’re looking for
+      doesn’t exist — or it wandered off somewhere.
+    </p>
+    <ul class="nf__links">
+      <li><a class="more" href="/">Back to the front page <span class="more__arrow" aria-hidden="true">→</span></a></li>
+      <li><a class="more" href={SECTIONS.observe.path}>To Observe &amp; Report <span class="more__arrow" aria-hidden="true">→</span></a></li>
+      <li><a class="more" href={SECTIONS.show.path}>To Show &amp; Tell <span class="more__arrow" aria-hidden="true">→</span></a></li>
+    </ul>
+  </section>
+</Base>
+
+<style>
+  .nf {
+    padding-top: clamp(4rem, 12vw, 8rem);
+    min-height: 60vh;
+  }
+
+  .nf__kicker {
+    margin-bottom: 1.4rem;
+    color: var(--accent-warm);
+  }
+
+  .nf__text {
+    margin-top: 1.8rem;
+    font-size: var(--fs-body);
+    line-height: 1.7;
+    color: var(--ink-soft);
+    max-width: 34rem;
+  }
+
+  .nf__links {
+    list-style: none;
+    padding: 0;
+    margin-top: 2.5rem;
+    display: grid;
+    justify-items: start;
+    gap: 1.25rem;
+  }
+</style>

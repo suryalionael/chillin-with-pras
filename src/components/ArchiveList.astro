@@ -1,0 +1,181 @@
+---
+// The archive "Preview": each entry is a large photograph paired with its
+// title, metadata and opening lines. Sides alternate down the page.
+import Photo from './Photo.astro';
+import { articlesIn, two } from '../lib/site.mjs';
+
+const { section } = Astro.props;
+const articles = articlesIn(section);
+
+function excerpt(blocks, dateline) {
+  const p = blocks.find((b) => b.type === 'p' && !b.subhead && b.text !== '' && b.text !== dateline);
+  if (!p) return '';
+  const words = p.text.split(/\s+/);
+  let out = '';
+  for (const w of words) {
+    if ((out + ' ' + w).trim().length > 190) break;
+    out += ' ' + w;
+  }
+  out = out.trim();
+  return /[.?!…]$/.test(out) ? out : out + '…';
+}
+
+const label = section === 'observe' ? 'observation' : 'show & tell';
+---
+
+<ol class="archive">
+  {
+    articles.map((a, i) => {
+      const img = a.blocks.find((b) => b.type === 'img');
+      const ex = excerpt(a.blocks, a.dateline);
+      return (
+        <li class:list={['entry', 'hover-host', i % 2 === 1 && 'entry--flip', !img && 'entry--text']}>
+          {img && (
+            <div class="entry__media photo-frame">
+              <Photo
+                file={img.file}
+                alt={img.alt || a.title}
+                fit="cover"
+                minAr={0.9}
+                maxAr={1.7}
+                sizes="(max-width: 900px) 92vw, 720px"
+                loading={i < 2 ? 'eager' : 'lazy'}
+              />
+            </div>
+          )}
+
+          <div class="entry__text">
+            <p class="entry__num" aria-hidden="true">{two(i + 1)}</p>
+            <p class="meta">
+              <span class="label">{label}</span>
+              {a.dateline && (
+                <>
+                  <span class="meta__dot" aria-hidden="true">·</span>
+                  <span class="hand-date">{a.dateline}</span>
+                </>
+              )}
+            </p>
+            <h3 class="entry__title">
+              <a href={a.path}>{a.title}</a>
+            </h3>
+            {ex && <p class="entry__excerpt">{ex}</p>}
+            <p class="entry__cta" aria-hidden="true">
+              <span class="more">Read the entry <span class="more__arrow">→</span></span>
+            </p>
+          </div>
+        </li>
+      );
+    })
+  }
+</ol>
+
+<style>
+  .archive {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .entry {
+    position: relative; /* the title link stretches over the whole entry */
+    display: grid;
+    grid-template-columns: minmax(0, 8fr) minmax(0, 5fr);
+    gap: 2rem clamp(2.5rem, 5vw, 5rem);
+    align-items: center;
+    padding: clamp(3rem, 6vw, 5rem) 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .entry:first-child {
+    border-top: none;
+    padding-top: 0;
+  }
+
+  .entry--flip {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 8fr);
+  }
+  .entry--flip .entry__media {
+    order: 2;
+  }
+
+  .entry--text {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .entry--text .entry__text {
+    max-width: 44rem;
+  }
+
+  .entry__media :global(.photo) {
+    transition: transform 0.8s var(--ease-out);
+  }
+  .entry:hover .entry__media :global(.photo) {
+    transform: scale(1.03);
+  }
+
+  .entry__num {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 2.1rem;
+    line-height: 1;
+    color: var(--accent-warm);
+    margin-bottom: 1.4rem;
+  }
+
+  .entry__title {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: var(--fs-h-entry);
+    line-height: 1.1;
+    letter-spacing: -0.012em;
+    text-wrap: balance;
+  }
+
+  .entry__title a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+  .entry__title a:focus-visible {
+    outline: none;
+  }
+  .entry:has(.entry__title a:focus-visible) {
+    outline: 2px solid var(--accent-warm);
+    outline-offset: 6px;
+  }
+  .entry:hover .entry__title a {
+    color: var(--accent-warm);
+  }
+
+  .entry__excerpt {
+    margin-top: 1.3rem;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 1.34rem;
+    line-height: 1.65;
+    color: var(--ink-soft);
+  }
+
+  .entry .meta {
+    margin-bottom: 1rem;
+  }
+
+  .entry__cta {
+    margin-top: 1.5rem;
+  }
+
+  @media (max-width: 900px) {
+    .entry,
+    .entry--flip {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 1.75rem;
+      align-items: start;
+    }
+    .entry--flip .entry__media {
+      order: 0;
+    }
+    .entry__num {
+      margin-bottom: 1rem;
+    }
+  }
+</style>

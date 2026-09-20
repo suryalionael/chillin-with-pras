@@ -1,0 +1,83 @@
+---
+import { SECTIONS, two } from '../lib/site.mjs';
+import EditorialTitle from './EditorialTitle.astro';
+
+const { section, entry, dateline = '' } = Astro.props;
+const sec = SECTIONS[section] || { title: '' };
+---
+
+<header class="article-head">
+  <p class="article-head__run label">
+    <a class="article-head__section" href={sec.path}>{sec.title}</a>
+    <span class="meta article-head__meta">
+      <span>entry {two(entry)}</span>
+      {dateline && <span class="meta__dot" aria-hidden="true">·</span>}
+      {dateline && <span class="hand-date">{dateline}</span>}
+    </span>
+  </p>
+
+  <EditorialTitle as="h1">{Astro.props.title}</EditorialTitle>
+
+  {Astro.props.intro && <p class="article-head__lead">{Astro.props.intro}</p>}
+</header>
+
+<style>
+  .article-head {
+    /* text shares the reading column's left edge; photographs break out wider */
+    padding: clamp(2.5rem, 6vw, 4.5rem) 0 clamp(2.5rem, 5vw, 3.5rem) max(0px, calc((100% - var(--read)) / 2));
+  }
+
+  .article-head__run {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem 1.5rem;
+    margin-bottom: 1.6rem;
+  }
+
+  .article-head__section {
+    color: var(--accent-warm);
+    padding: 0.5rem 0;
+    line-height: 1;
+    border-bottom: 1px solid rgba(110, 90, 73, 0.4);
+    transition: color 0.2s var(--ease-out), border-color 0.2s var(--ease-out);
+  }
+  .article-head__section:hover {
+    color: var(--ink);
+    border-color: var(--ink);
+  }
+  .article-head__section:focus-visible {
+    outline: 2px solid var(--accent-warm);
+    outline-offset: 4px;
+    border-radius: 2px;
+  }
+
+  .article-head :global(.editorial-title) {
+    max-width: 18ch;
+    text-wrap: balance;
+  }
+
+  .article-head__lead {
+    margin-top: 2rem;
+    color: var(--ink-soft);
+    font-size: var(--fs-lead);
+    font-style: italic;
+    line-height: 1.65;
+    max-width: var(--read);
+  }
+
+  @media (max-width: 800px) {
+    .article-head {
+      padding-left: 0;
+    }
+    .article-head__run {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+    .article-head__lead {
+      font-size: 1.28rem;
+      line-height: 1.6;
+    }
+  }
+</style>

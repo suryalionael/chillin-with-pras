@@ -1,0 +1,157 @@
+---
+// Editorial photo compositions. Photographs are large by default: they break
+// out of the reading column to the full story width, rows of images are kept
+// level by sharing height (flex-grow proportional to aspect ratio), and tall
+// portraits are capped to the viewport instead of being cropped.
+import Photo from './Photo.astro';
+import { ratio } from '../lib/images';
+
+const { variant, files, tone = 'wide', hero = false, caption = '' } = Astro.props;
+
+// tone: 'wide' (full story width) | 'inset-left' | 'inset-right'
+const rows = [];
+if (variant === 'cluster') {
+  const rest = files.slice(1);
+  const wideAll = (list) => list.every((f) => ratio(f.file) >= 1.15);
+  let i = 0;
+  // an odd remainder opens with a row of three, but only when all three are
+  // landscape; otherwise the last photograph stands alone, large
+  if (rest.length % 2 === 1 && rest.length >= 3 && wideAll(rest.slice(0, 3))) {
+    rows.push(rest.slice(0, 3));
+    i = 3;
+  }
+  for (; i < rest.length; i += 2) rows.push(rest.slice(i, i + 2));
+}
+const ar = (f) => ratio(f.file).toFixed(4);
+---
+
+<figure class:list={['figure', `figure--${variant}`, `figure--${tone}`, hero && 'figure--hero']}>
+  {variant === 'single' && (
+    <div class="figure__box" style={`--ar:${ar(files[0])}`}>
+      <div class="photo-frame">
+        <Photo
+          file={files[0].file}
+          alt={files[0].alt}
+          loading={hero ? 'eager' : 'lazy'}
+          sizes={tone === 'wide' ? '(max-width: 1400px) 92vw, 1300px' : '(max-width: 800px) 92vw, 52rem'}
+        />
+      </div>
+      {caption && <figcaption class="figure__hand hand">{caption}</figcaption>}
+    </div>
+  )}
+
+  {variant === 'pair' && (
+    <div class="figure__row" style={`--sum:${files.reduce((t, f) => t + ratio(f.file), 0).toFixed(4)}`}>
+      {files.map((f) => (
+        <div class="photo-frame" style={`--ar:${ar(f)}`}>
+          <Photo file={f.file} alt={f.alt} sizes="(max-width: 800px) 92vw, 50vw" />
+        </div>
+      ))}
+    </div>
+  )}
+
+  {variant === 'cluster' && (
+    <>
+      <div class="figure__box" style={`--ar:${ar(files[0])}`}>
+        <div class="photo-frame">
+          <Photo file={files[0].file} alt={files[0].alt} sizes="(max-width: 1400px) 92vw, 1300px" />
+        </div>
+      </div>
+      {rows.map((row) => (
+        <div
+          class:list={['figure__row', row.length === 1 && 'figure__row--solo']}
+          style={`--sum:${row.reduce((t, f) => t + ratio(f.file), 0).toFixed(4)}`}
+        >
+          {row.map((f) => (
+            <div class="photo-frame" style={`--ar:${ar(f)}`}>
+              <Photo file={f.file} alt={f.alt} sizes={row.length === 3 ? '(max-width: 800px) 92vw, 34vw' : row.length === 1 ? '(max-width: 800px) 92vw, 60vw' : '(max-width: 800px) 92vw, 50vw'} />
+            </div>
+          ))}
+        </div>
+      ))}
+    </>
+  )}
+</figure>
+
+<style>
+  .figure {
+    --cap: 82vh; /* tallest a single photograph may stand */
+    width: 100%;
+    max-width: var(--wide);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .figure--hero {
+    --cap: 105vh; /* the hero may run a little past the fold, full width */
+  }
+
+  /* single image: as wide as the story, but never taller than the viewport */
+  .figure__box {
+    width: min(100%, calc(var(--ar) * var(--cap)));
+    margin-inline: auto;
+  }
+
+  .figure--inset-left .figure__box,
+  .figure--inset-right .figure__box {
+    width: min(100%, 56rem, calc(var(--ar) * var(--cap)));
+  }
+  .figure--inset-left .figure__box {
+    margin-left: 0;
+    margin-right: auto;
+  }
+  .figure--inset-right .figure__box {
+    margin-left: auto;
+    margin-right: 0;
+  }
+
+  .figure__hand {
+    margin-top: 0.7rem;
+    font-size: 1.6rem;
+    line-height: 1.2;
+    transform: rotate(-0.8deg);
+    transform-origin: left;
+  }
+
+  /* level rows: each photo's share of the row equals its aspect ratio */
+  .figure__row {
+    display: flex;
+    gap: 1.25rem;
+    align-items: stretch;
+    /* two tall portraits would make a row taller than the screen: cap it */
+    width: min(100%, calc(var(--sum) * var(--cap)));
+    margin-inline: auto;
+  }
+  .figure__row--solo {
+    justify-content: center;
+  }
+  .figure__row .photo-frame {
+    flex: var(--ar) 1 0;
+    min-width: 0;
+  }
+
+  @media (max-width: 800px) {
+    .figure {
+      --cap: 78vh;
+      gap: 1rem;
+    }
+    .figure__row {
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .figure__row .photo-frame {
+      flex: none;
+      width: min(100%, calc(var(--ar) * 78vh));
+      margin-inline: auto;
+    }
+    .figure__hand {
+      font-size: 1.45rem;
+    }
+    /* keep panoramas from shrinking to a sliver on phones */
+    .figure__box :global(.photo) {
+      aspect-ratio: min(var(--ar), 1.8);
+    }
+  }
+</style>

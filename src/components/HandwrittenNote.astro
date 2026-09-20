@@ -1,0 +1,28 @@
+---
+const { rotation = 0 } = Astro.props;
+---
+
+<span class="hand-note" style={`--rot: ${rotation}deg`}>
+  <slot />
+</span>
+
+<style>
+  .hand-note {
+    display: inline-block;
+    font-family: var(--hand);
+    font-size: 1.3rem;
+    line-height: 1.25;
+    color: var(--accent-warm);
+    white-space: nowrap;
+    transform: rotate(var(--rot, 0deg));
+    z-index: 2;
+  }
+
+  :global(.figure__frame) > .hand-note,
+  :global(.figure) > .hand-note {
+    position: absolute;
+    pointer-events: none;
+    bottom: -0.95rem;
+    right: 0.6rem;
+  }
+</style>

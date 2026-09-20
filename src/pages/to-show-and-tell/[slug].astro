@@ -1,0 +1,12 @@
+---
+import ArticlePage from '../../components/ArticlePage.astro';
+import { articlesIn } from '../../lib/site.mjs';
+
+export function getStaticPaths() {
+  return articlesIn('show').map((a) => ({ params: { slug: a.slug } }));
+}
+
+const { slug } = Astro.params;
+---
+
+<ArticlePage slug={slug} section="show" />
