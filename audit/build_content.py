@@ -244,7 +244,6 @@ content = {
         "copyright": "© Prakoso Sastrowardoyo 2012",
         "author": "Prakoso Sastrowardoyo",
         "originalUrl": "https://www.chillinwithpras.com/",
-        "rssPath": "/index.xml",
     },
     "home": {"blocks": home_blocks},
     "sections": sections,

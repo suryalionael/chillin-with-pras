@@ -53,10 +53,6 @@ const chapterNum = section === 'observe' ? '01' : '02';
   <section class="container section-archive" aria-label={`${sec.title} entries`}>
     <ArchiveList section={section} />
   </section>
-
-  <p class="container section-feed">
-    <a class="more" href="/rss.xml">Subscribe to the RSS feed <span class="more__arrow" aria-hidden="true">→</span></a>
-  </p>
 </Base>
 
 <style>
@@ -116,10 +112,6 @@ const chapterNum = section === 'observe' ? '01' : '02';
 
   .section-archive {
     padding-top: clamp(4.5rem, 8vw, 6.5rem);
-  }
-
-  .section-feed {
-    margin-top: 3.5rem;
   }
 
   @media (max-width: 900px) {
