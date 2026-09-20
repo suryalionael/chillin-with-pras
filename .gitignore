@@ -35,3 +35,8 @@ test-results/
 
 # logs
 *.log
+
+# local Cloudflare/wrangler state and secrets
+.wrangler/
+.dev.vars
+.dev.vars.*

@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const site = JSON.parse(fs.readFileSync('src/data/site.json', 'utf8'));
-const dist = 'dist';
+const dist = 'dist/client'; // static public output (dist/server is the admin Worker)
 
 let problems = 0;
 const report = (ok, label, detail = '') => {
