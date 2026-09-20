@@ -1,0 +1,46 @@
+// Cloudflare Worker configuration for the on-demand admin + API.
+// The public site is static and is served from the built assets.
+//
+// PENDING CONFIGURATION (nothing here is a real credential):
+//   - database_id / bucket_name below are placeholders until the D1 database
+//     and R2 bucket are created in the Cloudflare dashboard.
+//   - ACCESS_TEAM_DOMAIN and ACCESS_AUD come from the Cloudflare Access
+//     application that will protect /admin and /api/admin.
+// Secrets (if any are ever needed) go in `wrangler secret put`, never in this file.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "chillin-with-pras",
+  "main": "@astrojs/cloudflare/entrypoints/server",
+  "compatibility_date": "2026-06-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // The Worker must only be reachable through the real domain (behind Access),
+  // never through *.workers.dev or preview URLs.
+  "workers_dev": false,
+  "preview_urls": false,
+
+  "vars": {
+    // Non-secret configuration. Authorization is enforced server-side against this value.
+    "ADMIN_EMAIL": "suryalionael@gmail.com",
+    // Cloudflare Access (pending configuration): e.g. "yourteam.cloudflareaccess.com"
+    "ACCESS_TEAM_DOMAIN": "",
+    // Application Audience (AUD) tag of the Access application (pending configuration)
+    "ACCESS_AUD": ""
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "chillin-with-pras-cms",
+      "database_id": "00000000-0000-0000-0000-000000000000", // PLACEHOLDER
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "chillin-with-pras-media" // PLACEHOLDER until the bucket exists
+    }
+  ]
+}
