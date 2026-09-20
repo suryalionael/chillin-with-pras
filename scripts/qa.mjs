@@ -17,8 +17,6 @@ const expectedFiles = [
   'index.html',
   'to-observe-and-report/index.html',
   'to-show-and-tell/index.html',
-  'rss.xml',
-  'index.xml',
   'sitemap-index.xml',
   'og.jpg',
   'favicon.svg',
@@ -27,6 +25,11 @@ const expectedFiles = [
 ];
 for (const f of expectedFiles) {
   report(fs.existsSync(path.join(dist, f)), 'file ' + f);
+}
+
+// ---------- 1b. RSS is gone (files, markup, and live URLs) ----------
+for (const f of ['rss.xml', 'index.xml']) {
+  report(!fs.existsSync(path.join(dist, f)), `no ${f} in build output`);
 }
 
 // ---------- 2. Static link integrity ----------
@@ -65,6 +68,14 @@ for (const htmlFile of allHtml) {
   }
 }
 console.log('[DONE] link integrity checked');
+
+// no page may advertise or link to a feed
+{
+  const feedRx = /application\/(rss|atom)\+xml|href="[^"]*(rss\.xml|index\.xml|atom\.xml)"|>\s*RSS( feed)?\s*</i;
+  const offenders = allHtml.filter((f) => feedRx.test(fs.readFileSync(f, 'utf8'))).map((f) => path.relative(dist, f));
+  report(offenders.length === 0, 'no page references a feed', offenders.slice(0, 3).join(', '));
+}
+
 
 // ---------- 3. Browser probes (overflow / status / image resource failures) ----------
 const base = 'http://localhost:4321';
@@ -192,6 +203,12 @@ await import('playwright').then(async ({ chromium }) => {
     const tt = await page.evaluate(() => getComputedStyle(document.querySelector('.article-head .hand-date')).textTransform);
     report(tt === 'none', 'handwritten date not uppercased', tt);
     await page.close();
+  }
+
+  // legacy feed URLs are ordinary 404s (no redirects, no replacement feed)
+  for (const url of ['/rss.xml', '/index.xml']) {
+    const res = await fetch(base + url);
+    report(res.status === 404, `${url} returns 404`, `got ${res.status}`);
   }
 
   // header nav: never wraps to more than one line at any width

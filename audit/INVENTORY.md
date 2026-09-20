@@ -16,10 +16,11 @@ Source: https://www.chillinwithpras.com/
 | Home ("Observations of a Slacker") | `/` | cover |
 | To Observe and Report (30 entries) | `/to-observe-and-report/` | section index |
 | To Show and Tell (5 entries) | `/to-show-and-tell/` | section index |
-| RSS | `/index.xml` | feed |
 | Footer | `© Prakoso Sastrowardoyo 2012` | credit |
 
 No About page exists in source navigation. Do not invent one.
+
+The original site also published an RSS feed (`/index.xml`). It is intentionally **not** carried over: the redesign has no feed, and `/index.xml` and `/rss.xml` are plain 404s.
 
 ### To Observe and Report (menu order = publication order)
 1. The Wall — Apr 2012
@@ -69,7 +70,6 @@ Datelines above are taken *verbatim from article bodies* (final line), never inv
 - `/to-observe-and-report/{slug}.html` (×30)
 - `/to-show-and-tell/`
 - `/to-show-and-tell/{slug}.html` (×4) + `/to-show-and-tell/windows-to-the-world/` (×1)
-- `/index.xml`
 - `/favicon.ico`
 
 Destination mapping (clean URLs):
@@ -79,7 +79,6 @@ Destination mapping (clean URLs):
 - `/to-observe-and-report/{slug}.html` → `/to-observe-and-report/{slug}/`
 - `/to-show-and-tell/` → `/to-show-and-tell/`
 - `/to-show-and-tell/{slug}.html` → `/to-show-and-tell/{slug}/`
-- `/index.xml` → `/rss.xml`
 
 ## 4. Content inventory
 
@@ -103,7 +102,6 @@ Destination mapping (clean URLs):
 | Section indices | B — Section/Archive |
 | 30 observe stories | C — Article/Story |
 | 5 show projects | D — Show & Tell |
-| RSS | E — Utility/Information |
 
 ## 7. Typography / color observations (original)
 

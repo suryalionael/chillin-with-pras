@@ -35,12 +35,6 @@ function isActive(key) {
             </li>
           ))
         }
-        <li>
-          <a class="site-nav__link site-nav__link--rss" href="/rss.xml">
-            RSS
-            <span class="site-nav__underscore" aria-hidden="true"></span>
-          </a>
-        </li>
       </ul>
     </nav>
 
@@ -62,7 +56,6 @@ function isActive(key) {
             <a class="site-menu__item site-menu__item--sub" href={a.path} aria-current={current === a.path ? 'page' : undefined}>{a.title}</a>
           ))
         }
-        <a class="site-menu__item" href="/rss.xml">RSS feed</a>
       </div>
     </details>
   </div>
@@ -167,10 +160,6 @@ function isActive(key) {
   }
   .site-nav__link:focus-visible .site-nav__underscore {
     transform: scaleX(1);
-  }
-
-  .site-nav__link--rss {
-    color: var(--accent-warm);
   }
 
   .site-nav__underscore {
