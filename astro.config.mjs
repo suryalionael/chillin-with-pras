@@ -2,6 +2,7 @@
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import cloudflare from '@astrojs/cloudflare';
+import react from '@astrojs/react';
 
 // The public site stays fully static (every page is prerendered at build time).
 // The Cloudflare adapter exists only so /admin and /api/admin can run on demand;
@@ -21,6 +22,9 @@ export default defineConfig({
     prerenderEnvironment: 'node',
   }),
   integrations: [
+    // React only powers the admin story editor, mounted with `client:only`
+    // so ProseMirror never runs during the static (public) build.
+    react(),
     // Admin pages are on-demand and are never part of the sitemap.
     sitemap({ filter: (page) => !new URL(page).pathname.startsWith('/admin') }),
   ],
