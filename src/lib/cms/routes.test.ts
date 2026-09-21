@@ -17,6 +17,9 @@ function walk(dir: string): string[] {
 const files = walk(PAGES).map((f) => relative(PAGES, f));
 const adminFiles = files.filter((f) => /^(api\/)?admin(\/|\.)/.test(f) || f.startsWith('api/'));
 
+// Public dynamic routes that are intentionally server-rendered (not part of admin/API)
+const publicDynamicRoutes = new Set(['images/[id].ts']);
+
 test('there are admin and API routes to check', () => {
   assert.ok(adminFiles.length >= 8, adminFiles.join(', '));
 });
@@ -29,14 +32,14 @@ test('every /admin and /api route opts out of prerendering', () => {
 });
 
 test('nothing outside /admin and /api opts out of prerendering (the public site stays static)', () => {
-  for (const f of files.filter((x) => !adminFiles.includes(x))) {
+  for (const f of files.filter((file) => !adminFiles.includes(file) && !publicDynamicRoutes.has(file))) {
     const src = readFileSync(join(PAGES, f), 'utf8');
     assert.doesNotMatch(src, /prerender\s*=\s*false/, `${f} would make a public route dynamic`);
   }
 });
 
 test('every API handler authorizes independently of the middleware', () => {
-  for (const f of files.filter((x) => x.startsWith('api/admin/'))) {
+  for (const f of files.filter((file) => file.startsWith('api/admin/'))) {
     const src = readFileSync(join(PAGES, f), 'utf8');
     assert.match(src, /adminEndpoint\(|authorizeAdminRequest\(/, `${f} must call adminEndpoint()/authorizeAdminRequest()`);
   }
