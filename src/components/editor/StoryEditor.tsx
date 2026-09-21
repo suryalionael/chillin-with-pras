@@ -11,6 +11,7 @@ import { useAutosave } from './useAutosave.ts';
 import { useLocalBackup } from './useLocalBackup.ts';
 import { Image } from './ImageExtension.ts';
 import { Embed } from './EmbedExtension.ts';
+import { ImagePicker } from './ImagePicker.tsx';
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface StoryEditorProps {
@@ -67,13 +68,19 @@ const EXTENSIONS = [
       { title: 'Bulleted list', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleBulletList().run() },
       { title: 'Numbered list', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleOrderedList().run() },
       { title: 'Divider', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHorizontalRule().run() },
-      { title: 'Image', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setImage({ imageId: uuidv4(), alt: '', caption: '', decorative: false, size: 'wide' }).run() },
+      { title: 'Image', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).run() },
       { title: 'Embed', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setEmbed({ url: '' }).run() },
     ],
     render: () => {
       let component: SlashMenu | null = null;
       return {
-        onStart: (props) => { component = new SlashMenu(props); },
+        onStart: (props) => {
+          component = new SlashMenu(props);
+          component.setOnImagePickerRequest((range) => {
+            setPendingImageRange(range);
+            setImagePickerOpen(true);
+          });
+        },
         onUpdate: (props) => { component?.update(props); },
         onKeyDown: (props) => { return component?.onKeyDown(props) ?? false; },
         onExit: () => { component?.destroy(); component = null; },
@@ -90,6 +97,8 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'unsaved' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [showConflict, setShowConflict] = useState<{ currentRev: number } | null>(null);
+  const [imagePickerOpen, setImagePickerOpen] = useState(false);
+  const [pendingImageRange, setPendingImageRange] = useState<{ from: number; to: number } | null>(null);
 
   const editor = useEditor({
     extensions: [...EXTENSIONS, Image, Embed],
@@ -206,6 +215,40 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
     setShowConflict(null);
   }, [showConflict, doc, onSave, saveWithDebounce]);
 
+  const handleImageSelect = useCallback((image: { id: string; filename: string }) => {
+    if (!editor || !pendingImageRange) return;
+    editor.chain().focus().deleteRange(pendingImageRange).setImage({
+      imageId: image.id,
+      alt: '',
+      caption: '',
+      decorative: false,
+      size: 'wide',
+    }).run();
+    setPendingImageRange(null);
+    setImagePickerOpen(false);
+  }, [editor, pendingImageRange]);
+
+  const handleImageUpload = useCallback(async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch('/api/admin/images/', {
+        method: 'POST',
+        body: formData,
+        credentials: 'same-origin',
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error?.message || 'Upload failed');
+      }
+      const data = await res.json();
+      return data.image;
+    } catch (e) {
+      console.error('Image upload failed', e);
+      return null;
+    }
+  }, []);
+
   return (
     <div className="editor-shell">
       <header className="editor-header">
@@ -262,6 +305,13 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
         </div>
 
         <FloatingToolbar editor={editor} />
+
+        <ImagePicker
+          isOpen={imagePickerOpen}
+          onClose={() => setImagePickerOpen(false)}
+          onSelect={handleImageSelect}
+          onUpload={handleImageUpload}
+        />
       </main>
     </div>
   );
