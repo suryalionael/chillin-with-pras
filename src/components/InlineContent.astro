@@ -1,0 +1,19 @@
+---
+// Renders inline content with bold/italic/link formatting from CMS
+const { inline } = Astro.props;
+---
+
+{inline.map((node, i) => {
+  if (node.br) return <br key={i} />;
+  const style = {};
+  if (node.bold) style.fontWeight = 700;
+  if (node.italic) style.fontStyle = 'italic';
+  if (node.href) {
+    return (
+      <a key={i} href={node.href} target="_blank" rel="noopener noreferrer" style={style}>
+        {node.text}
+      </a>
+    );
+  }
+  return <span key={i} style={style}>{node.text}</span>;
+})}
