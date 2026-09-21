@@ -6,13 +6,13 @@
 import Photo from './Photo.astro';
 import { ratio } from '../lib/images';
 
-const { variant, files, tone = 'wide', hero = false, caption = '' } = Astro.props;
+const { variant, files, tone = 'wide', hero = false, caption = '', isCms = false } = Astro.props;
 
 // tone: 'wide' (full story width) | 'inset-left' | 'inset-right'
 const rows = [];
 if (variant === 'cluster') {
   const rest = files.slice(1);
-  const wideAll = (list) => list.every((f) => ratio(f.file) >= 1.15);
+  const wideAll = (list) => list.every((f) => (isCms ? true : ratio(f.file) >= 1.15));
   let i = 0;
   // an odd remainder opens with a row of three, but only when all three are
   // landscape; otherwise the last photograph stands alone, large
@@ -22,29 +22,51 @@ if (variant === 'cluster') {
   }
   for (; i < rest.length; i += 2) rows.push(rest.slice(i, i + 2));
 }
-const ar = (f) => ratio(f.file).toFixed(4);
+const ar = (f) => isCms ? '1.7778' : ratio(f.file).toFixed(4); // default 16:9 for CMS images
 ---
 
 <figure class:list={['figure', `figure--${variant}`, `figure--${tone}`, hero && 'figure--hero']}>
   {variant === 'single' && (
     <div class="figure__box" style={`--ar:${ar(files[0])}`}>
       <div class="photo-frame">
-        <Photo
-          file={files[0].file}
-          alt={files[0].alt}
-          loading={hero ? 'eager' : 'lazy'}
-          sizes={tone === 'wide' ? '(max-width: 1400px) 92vw, 1300px' : '(max-width: 800px) 92vw, 52rem'}
-        />
+        {isCms ? (
+          <img
+            src={`/images/${files[0].imageId}`}
+            alt={files[0].decorative ? '' : files[0].alt}
+            loading={hero ? 'eager' : 'lazy'}
+            decoding="async"
+            class="photo"
+            sizes={tone === 'wide' ? '(max-width: 1400px) 92vw, 1300px' : '(max-width: 800px) 92vw, 52rem'}
+          />
+        ) : (
+          <Photo
+            file={files[0].file}
+            alt={files[0].alt}
+            loading={hero ? 'eager' : 'lazy'}
+            sizes={tone === 'wide' ? '(max-width: 1400px) 92vw, 1300px' : '(max-width: 800px) 92vw, 52rem'}
+          />
+        )}
       </div>
-      {caption && <figcaption class="figure__hand hand">{caption}</figcaption>}
+      {(caption || (isCms && files[0].caption)) && <figcaption class="figure__hand hand">{caption || files[0].caption}</figcaption>}
     </div>
   )}
 
   {variant === 'pair' && (
-    <div class="figure__row" style={`--sum:${files.reduce((t, f) => t + ratio(f.file), 0).toFixed(4)}`}>
+    <div class="figure__row" style={`--sum:${files.reduce((t, f) => t + (isCms ? 1.7778 : ratio(f.file)), 0).toFixed(4)}`}>
       {files.map((f) => (
-        <div class="photo-frame" style={`--ar:${ar(f)}`}>
-          <Photo file={f.file} alt={f.alt} sizes="(max-width: 800px) 92vw, 50vw" />
+        <div class="photo-frame" style={`--ar:${isCms ? '1.7778' : ar(f)}`}>
+          {isCms ? (
+            <img
+              src={`/images/${f.imageId}`}
+              alt={f.decorative ? '' : f.alt}
+              loading="lazy"
+              decoding="async"
+              class="photo"
+              sizes="(max-width: 800px) 92vw, 50vw"
+            />
+          ) : (
+            <Photo file={f.file} alt={f.alt} sizes="(max-width: 800px) 92vw, 50vw" />
+          )}
         </div>
       ))}
     </div>
@@ -54,17 +76,39 @@ const ar = (f) => ratio(f.file).toFixed(4);
     <>
       <div class="figure__box" style={`--ar:${ar(files[0])}`}>
         <div class="photo-frame">
-          <Photo file={files[0].file} alt={files[0].alt} sizes="(max-width: 1400px) 92vw, 1300px" />
+          {isCms ? (
+            <img
+              src={`/images/${files[0].imageId}`}
+              alt={files[0].decorative ? '' : files[0].alt}
+              loading={hero ? 'eager' : 'lazy'}
+              decoding="async"
+              class="photo"
+              sizes="(max-width: 1400px) 92vw, 1300px"
+            />
+          ) : (
+            <Photo file={files[0].file} alt={files[0].alt} sizes="(max-width: 1400px) 92vw, 1300px" />
+          )}
         </div>
       </div>
       {rows.map((row) => (
         <div
           class:list={['figure__row', row.length === 1 && 'figure__row--solo']}
-          style={`--sum:${row.reduce((t, f) => t + ratio(f.file), 0).toFixed(4)}`}
+          style={`--sum:${row.reduce((t, f) => t + (isCms ? 1.7778 : ratio(f.file)), 0).toFixed(4)}`}
         >
           {row.map((f) => (
-            <div class="photo-frame" style={`--ar:${ar(f)}`}>
-              <Photo file={f.file} alt={f.alt} sizes={row.length === 3 ? '(max-width: 800px) 92vw, 34vw' : row.length === 1 ? '(max-width: 800px) 92vw, 60vw' : '(max-width: 800px) 92vw, 50vw'} />
+            <div class="photo-frame" style={`--ar:${isCms ? '1.7778' : ar(f)}`}>
+              {isCms ? (
+                <img
+                  src={`/images/${f.imageId}`}
+                  alt={f.decorative ? '' : f.alt}
+                  loading="lazy"
+                  decoding="async"
+                  class="photo"
+                  sizes={row.length === 3 ? '(max-width: 800px) 92vw, 34vw' : row.length === 1 ? '(max-width: 800px) 92vw, 60vw' : '(max-width: 800px) 92vw, 50vw'}
+                />
+              ) : (
+                <Photo file={f.file} alt={f.alt} sizes={row.length === 3 ? '(max-width: 800px) 92vw, 34vw' : row.length === 1 ? '(max-width: 800px) 92vw, 60vw' : '(max-width: 800px) 92vw, 50vw'} />
+              )}
             </div>
           ))}
         </div>

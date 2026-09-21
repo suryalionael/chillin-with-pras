@@ -1,6 +1,7 @@
 ---
 import { renderSequence } from '../lib/render.mjs';
 import Figure from './Figure.astro';
+import InlineContent from './InlineContent.astro';
 
 const { blocks, dateline = '' } = Astro.props;
 const seq = renderSequence(blocks, dateline);
@@ -25,13 +26,16 @@ let singles = 0;
         if (item.subhead) {
           return <h2 class="prose__text subhead">{item.text}</h2>;
         }
+        if (item.inline) {
+          return <p class="prose__text prose__p"><InlineContent inline={item.inline} /></p>;
+        }
         return <p class="prose__text prose__p">{item.text}</p>;
       }
 
       const tone = item.variant === 'single' ? tones[singles++ % tones.length] : 'wide';
       return (
         <div class="prose__figure">
-          <Figure variant={item.variant} files={item.files} tone={tone} />
+          <Figure variant={item.variant} files={item.files} tone={tone} isCms={item.isCms} />
         </div>
       );
     })

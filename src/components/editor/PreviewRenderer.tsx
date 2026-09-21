@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { docToBlocks, ArticleBlock, Inline } from '../../lib/preview-blocks.ts';
+import { docToBlocks, ArticleBlock, Inline, CmsImageBlock } from '../../lib/preview-blocks.ts';
 
 interface PreviewRendererProps {
   doc: any;
@@ -44,17 +44,24 @@ function PreviewSubheading({ block }: { block: SubheadingBlock }) {
 }
 
 function PreviewImage({ block }: { block: CmsImageBlock }) {
+  const imageUrl = `/images/${block.imageId}`;
+  const tone = block.size === 'inset' ? 'inset-right' : 'wide';
   return (
     <div className="prose__figure">
-      <figure className={`figure figure--single figure--${block.size}`}>
-        <div className="figure__box" style={{ background: 'var(--paper-deep)', borderRadius: '2px', minHeight: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ink-soft)' }}>
-          <div style={{ textAlign: 'center', padding: '2rem' }}>
-            <div>📷 Image placeholder</div>
-            <div style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>{block.imageId}</div>
-            {block.alt && <div style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>Alt: {block.alt}</div>}
+      <figure className={`figure figure--single figure--${tone}`}>
+        <div className="figure__box" style={{ width: 'min(100%, calc(var(--ar) * var(--cap)))', marginInline: 'auto' }}>
+          <div className="photo-frame" style={{ '--ar': '16 / 9' }}>
+            <img
+              src={imageUrl}
+              alt={block.decorative ? '' : block.alt}
+              loading="lazy"
+              decoding="async"
+              className="photo"
+              style={{ aspectRatio: '16 / 9' }}
+            />
           </div>
+          {block.caption && <figcaption className="figure__hand hand">{block.caption}</figcaption>}
         </div>
-        {block.caption && <figcaption className="figure__hand hand" style={{ fontSize: '1.6rem', transform: 'rotate(-0.8deg)' }}>{block.caption}</figcaption>}
       </figure>
     </div>
   );
