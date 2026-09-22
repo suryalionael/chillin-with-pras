@@ -1,0 +1,47 @@
+---
+// Recursive list renderer for CMS list blocks. Kept in its own component so the
+// markup is parsed as an Astro template (frontmatter is TypeScript, not JSX).
+import InlineContent from './InlineContent.astro';
+
+const { items = [], ordered = false, depth = 0 } = Astro.props;
+const Tag = ordered ? 'ol' : 'ul';
+---
+
+<Tag
+  class:list={['prose__text', 'prose__list']}
+  style={depth > 0 ? 'margin-left:1.5rem' : undefined}
+>
+  {
+    items.map((item) => (
+      <li>
+        {item.inline && item.inline.length > 0 && <InlineContent inline={item.inline} />}
+        {item.children &&
+          item.children.length > 0 &&
+          item.children.map((child) => (
+            <ProseList items={child.items} ordered={child.ordered} depth={depth + 1} />
+          ))}
+      </li>
+    ))
+  }
+</Tag>
+
+<style>
+  .prose__text {
+    max-width: var(--read);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .prose__list {
+    font-family: var(--serif);
+    font-size: var(--fs-body);
+    font-weight: 500;
+    line-height: 1.85;
+    color: var(--ink);
+    margin-bottom: 1.5em;
+    padding-left: 1.5rem;
+  }
+  .prose__list li {
+    margin-bottom: 0.4em;
+  }
+</style>
