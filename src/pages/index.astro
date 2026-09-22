@@ -2,13 +2,15 @@
 import Base from '../layouts/Base.astro';
 import Photo from '../components/Photo.astro';
 import { ratio } from '../lib/images';
-import site, { SECTIONS, sectionDesc, sectionCover, two, articlesIn, leadImage } from '../lib/site.mjs';
+import site, { SECTIONS, sectionDesc, sectionCover } from '../lib/site.mjs';
+import { getArticlesInSection } from '../lib/cms/build-content.ts';
 
 const dictImage = site.home.blocks.find((b) => b.type === 'img');
 const dictParas = site.home.blocks.filter((b) => b.type === 'p');
 
-const observe = articlesIn('observe');
-const show = articlesIn('show');
+// Load all articles (legacy + CMS) for both sections
+const observe = await getArticlesInSection('observe');
+const show = await getArticlesInSection('show');
 const selected = [observe[observe.length - 1], observe[observe.length - 2], show[show.length - 1]].filter(Boolean);
 
 const chapters = [
@@ -16,7 +18,7 @@ const chapters = [
   { key: 'show', n: '02', count: show.length },
 ];
 
-function excerpt(article) {
+function excerpt(article: { blocks: import('../lib/content/article.ts').ArticleBlock[]; dateline: string }): string {
   const p = article.blocks.find((b) => b.type === 'p' && !b.subhead && b.text !== article.dateline && b.text !== '');
   if (!p) return '';
   const words = p.text.split(/\s+/);
@@ -92,32 +94,50 @@ function excerpt(article) {
     <h2 id="selected-h" class="section-title">Latest entries</h2>
     <ul class="selected__list">
       {
-        selected.map((a, i) => (
-          <li class:list={['pick', 'hover-host', i === 0 && 'pick--lead']}>
-            <div class="pick__media photo-frame">
-              <Photo
-                file={leadImage(a)}
-                alt={a.title}
-                fit="cover"
-                minAr={i === 0 ? 1.5 : 1.33}
-                maxAr={i === 0 ? 1.9 : 1.33}
-                sizes={i === 0 ? '(max-width: 900px) 92vw, 1200px' : '(max-width: 900px) 92vw, 640px'}
-              />
-            </div>
-            <div class="pick__text">
-              <p class="meta">
-                <span class="label">{a.section === 'observe' ? 'To Observe & Report' : 'To Show & Tell'}</span>
-                {a.dateline && <span class="meta__dot" aria-hidden="true">·</span>}
-                {a.dateline && <span class="hand-date">{a.dateline}</span>}
-              </p>
-              <h3 class="pick__title">
-                <a href={a.path}>{a.title}</a>
-              </h3>
-              <p class="pick__excerpt">{excerpt(a)}</p>
-              <p class="pick__cta" aria-hidden="true"><span class="more">Read the entry <span class="more__arrow">→</span></span></p>
-            </div>
-          </li>
-        ))
+        selected.map((a, i) => {
+          // Find lead image for this article (legacy or CMS)
+          const lead = a.blocks.find((b) => b.type === 'img');
+          return (
+            <li class:list={['pick', 'hover-host', i === 0 && 'pick--lead']}>
+              <div class="pick__media photo-frame">
+                {lead && !lead.source ? (
+                  <Photo
+                    file={lead.file}
+                    alt={a.title}
+                    fit="cover"
+                    minAr={i === 0 ? 1.5 : 1.33}
+                    maxAr={i === 0 ? 1.9 : 1.33}
+                    sizes={i === 0 ? '(max-width: 900px) 92vw, 1200px' : '(max-width: 900px) 92vw, 640px'}
+                  />
+                ) : lead && lead.source === 'cms' ? (
+                  <img
+                    src={`/images/${lead.imageId}`}
+                    alt={lead.decorative ? '' : lead.alt || a.title}
+                    loading={i === 0 ? 'eager' : 'lazy'}
+                    decoding="async"
+                    sizes={i === 0 ? '(max-width: 900px) 92vw, 1200px' : '(max-width: 900px) 92vw, 640px'}
+                    class="photo"
+                    style={`aspect-ratio:${i === 0 ? 1.78 : 1.33};object-fit:cover;width:100%`}
+                  />
+                ) : (
+                  <Photo file={sectionCover(a.section)} alt="" fit="cover" minAr={i === 0 ? 1.5 : 1.33} maxAr={i === 0 ? 1.9 : 1.33} sizes={i === 0 ? '(max-width: 900px) 92vw, 1200px' : '(max-width: 900px) 92vw, 640px'} />
+                )}
+              </div>
+              <div class="pick__text">
+                <p class="meta">
+                  <span class="label">{a.section === 'observe' ? 'To Observe & Report' : 'To Show & Tell'}</span>
+                  {a.dateline && <span class="meta__dot" aria-hidden="true">·</span>}
+                  {a.dateline && <span class="hand-date">{a.dateline}</span>}
+                </p>
+                <h3 class="pick__title">
+                  <a href={a.path}>{a.title}</a>
+                </h3>
+                <p class="pick__excerpt">{excerpt(a)}</p>
+                <p class="pick__cta" aria-hidden="true"><span class="more">Read the entry <span class="more__arrow">→</span></span></p>
+              </div>
+            </li>
+          );
+        })
       }
     </ul>
   </section>

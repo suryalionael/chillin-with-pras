@@ -2,12 +2,16 @@
 // The archive "Preview": each entry is a large photograph paired with its
 // title, metadata and opening lines. Sides alternate down the page.
 import Photo from './Photo.astro';
-import { articlesIn, two } from '../lib/site.mjs';
+import { two } from '../lib/site.mjs';
 
-const { section } = Astro.props;
-const articles = articlesIn(section);
+interface Props {
+  section: 'observe' | 'show';
+  articles: import('../lib/content/article.ts').Article[];
+}
 
-function excerpt(blocks, dateline) {
+const { section, articles } = Astro.props;
+
+function excerpt(blocks: import('../lib/content/article.ts').ArticleBlock[], dateline: string): string {
   const p = blocks.find((b) => b.type === 'p' && !b.subhead && b.text !== '' && b.text !== dateline);
   if (!p) return '';
   const words = p.text.split(/\s+/);
@@ -26,21 +30,33 @@ const label = section === 'observe' ? 'observation' : 'show & tell';
 <ol class="archive">
   {
     articles.map((a, i) => {
+      // Find the first image (legacy or CMS)
       const img = a.blocks.find((b) => b.type === 'img');
       const ex = excerpt(a.blocks, a.dateline);
       return (
         <li class:list={['entry', 'hover-host', i % 2 === 1 && 'entry--flip', !img && 'entry--text']}>
           {img && (
             <div class="entry__media photo-frame">
-              <Photo
-                file={img.file}
-                alt={img.alt || a.title}
-                fit="cover"
-                minAr={0.9}
-                maxAr={1.7}
-                sizes="(max-width: 900px) 92vw, 720px"
-                loading={i < 2 ? 'eager' : 'lazy'}
-              />
+              {!img.source || img.source === 'legacy' ? (
+                <Photo
+                  file={img.file}
+                  alt={img.alt || a.title}
+                  fit="cover"
+                  minAr={0.9}
+                  maxAr={1.7}
+                  sizes="(max-width: 900px) 92vw, 720px"
+                  loading={i < 2 ? 'eager' : 'lazy'}
+                />
+              ) : (
+                <img
+                  src={`/images/${img.imageId}`}
+                  alt={img.decorative ? '' : img.alt || a.title}
+                  loading={i < 2 ? 'eager' : 'lazy'}
+                  sizes="(max-width: 900px) 92vw, 720px"
+                  class="photo"
+                  style={{ aspectRatio: '16/9', objectFit: 'cover' }}
+                />
+              )}
             </div>
           )}
 

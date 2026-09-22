@@ -4,11 +4,13 @@ import EditorialTitle from '../components/EditorialTitle.astro';
 import ArchiveList from '../components/ArchiveList.astro';
 import Photo from '../components/Photo.astro';
 import { ratio } from '../lib/images';
-import { SECTIONS, sectionCover, sectionDesc, two, articlesIn } from '../lib/site.mjs';
+import { getArticlesInSection } from '../lib/cms/build-content.ts';
+import { SECTIONS, sectionCover, sectionDesc, two } from '../lib/site.mjs';
 
 const { section } = Astro.props;
 const sec = SECTIONS[section];
-const count = articlesIn(section).length;
+const articles = await getArticlesInSection(section);
+const count = articles.length;
 const cover = sectionCover(section);
 const coverAr = ratio(cover).toFixed(4);
 const chapterNum = section === 'observe' ? '01' : '02';
@@ -51,7 +53,7 @@ const chapterNum = section === 'observe' ? '01' : '02';
   </section>
 
   <section class="container section-archive" aria-label={`${sec.title} entries`}>
-    <ArchiveList section={section} />
+    <ArchiveList section={section} articles={articles} />
   </section>
 </Base>
 
