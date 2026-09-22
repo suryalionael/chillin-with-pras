@@ -2,23 +2,50 @@
 // End of an entry: the next entry is a full feature (photo + title) so the
 // reading journey continues; previous / all entries sit quietly underneath.
 import Photo from './Photo.astro';
-import { SECTIONS, prevArticle, nextArticle, leadImage, sectionCover } from '../lib/site.mjs';
+import { SECTIONS, sectionCover } from '../lib/site.mjs';
 
-const { article, section } = Astro.props;
+const { article, section, prev = null, next = null } = Astro.props;
 const sec = SECTIONS[section];
-const prev = prevArticle(article, section);
-const next = nextArticle(article, section);
 
-// last entry: hand the reader back to the start of the chapter instead
+// first photograph for the "up next" card: legacy files go through Photo,
+// CMS images render as a plain img, otherwise fall back to the section cover
+function navImage(a) {
+  if (!a) return null;
+  const img = a.blocks.find((b) => b.type === 'img');
+  if (!img) return { kind: 'cover' };
+  if (!img.source || img.source === 'legacy') return { kind: 'legacy', file: img.file };
+  return { kind: 'cms', imageId: img.imageId };
+}
+
+const nextMedia = navImage(next) ?? { kind: 'cover' };
 const target = next
-  ? { href: next.path, title: next.title, file: leadImage(next), label: 'Next entry', date: next.dateline, cta: 'Read the next entry' }
-  : { href: sec.path, title: sec.title, file: sectionCover(section), label: 'That was the last entry', date: '', cta: 'Back to all entries' };
+  ? { href: next.path, title: next.title, label: 'Next entry', date: next.dateline, cta: 'Read the next entry' }
+  : { href: sec.path, title: sec.title, label: 'That was the last entry', date: '', cta: 'Back to all entries' };
 ---
 
 <nav class="container article-nav" aria-label="More entries">
   <a class="upnext" href={target.href}>
     <div class="upnext__media photo-frame">
-      <Photo file={target.file} alt="" fit="cover" minAr={1.4} maxAr={1.4} sizes="(max-width: 900px) 92vw, 720px" />
+      {nextMedia.kind === 'cms' ? (
+        <img
+          src={`/images/${nextMedia.imageId}`}
+          alt=""
+          class="photo"
+          loading="lazy"
+          decoding="async"
+          sizes="(max-width: 900px) 92vw, 720px"
+          style="aspect-ratio:1.4;object-fit:cover;width:100%"
+        />
+      ) : (
+        <Photo
+          file={nextMedia.kind === 'legacy' ? nextMedia.file : sectionCover(section)}
+          alt=""
+          fit="cover"
+          minAr={1.4}
+          maxAr={1.4}
+          sizes="(max-width: 900px) 92vw, 720px"
+        />
+      )}
     </div>
     <div class="upnext__text">
       <p class="label">{target.label}</p>
