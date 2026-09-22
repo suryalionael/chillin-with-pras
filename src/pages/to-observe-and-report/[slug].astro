@@ -1,9 +1,10 @@
 ---
 import ArticlePage from '../../components/ArticlePage.astro';
-import { articlesIn } from '../../lib/site.mjs';
+import { getArticlesInSection } from '../../lib/cms/build-content.ts';
 
-export function getStaticPaths() {
-  return articlesIn('observe').map((a) => ({ params: { slug: a.slug } }));
+export async function getStaticPaths() {
+  const articles = await getArticlesInSection('observe');
+  return articles.map((a) => ({ params: { slug: a.slug } }));
 }
 
 const { slug } = Astro.params;
