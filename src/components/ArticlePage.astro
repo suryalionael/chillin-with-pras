@@ -4,14 +4,21 @@ import ArticleHeader from './ArticleHeader.astro';
 import ArticleBody from './ArticleBody.astro';
 import ArticleNav from './ArticleNav.astro';
 import Figure from './Figure.astro';
-import { sectionOf, leadImage } from '../lib/site.mjs';
+import { getArticleBySlug, getArticlesInSection } from '../lib/cms/build-content.ts';
+import { leadImage, sectionCover } from '../lib/site.mjs';
 import { findImage } from '../lib/images';
 
 const { slug, section } = Astro.props;
-const article = sectionOf(slug);
+const article = await getArticleBySlug(slug!);
 if (!article || article.section !== section) {
   throw new Error(`Unknown article ${section}/${slug}`);
 }
+
+// prev/next must consider legacy + CMS articles in the combined list
+const siblings = await getArticlesInSection(section);
+const idx = siblings.findIndex((a) => a.slug === article.slug);
+const prev = idx > 0 ? siblings[idx - 1] : null;
+const next = idx >= 0 && idx < siblings.length - 1 ? siblings[idx + 1] : null;
 
 const introIdx = article.blocks.findIndex(
   (b) => b.type === 'p' && !b.subhead && b.text !== article.dateline
@@ -26,7 +33,25 @@ const firstImg = bodyBlocks.findIndex((b) => b.type === 'img');
 const hero = firstImg >= 0 && firstImg <= 8 ? bodyBlocks[firstImg] : null;
 if (hero) bodyBlocks = bodyBlocks.filter((_, i) => i !== firstImg);
 const canonicalUrl = `https://www.chillinwithpras.com${article.path}`;
-const og = `https://www.chillinwithpras.com${findImage(leadImage(article)).src}`;
+
+// og:image: legacy images resolve through the asset pipeline; CMS images use
+// the public /images/{id} route; fall back to the section cover / site og.
+let og = 'https://www.chillinwithpras.com/og.jpg';
+const ogLead = article.blocks.find((b) => b.type === 'img');
+if (ogLead && ogLead.source === 'cms') {
+  og = `https://www.chillinwithpras.com/images/${ogLead.imageId}`;
+} else {
+  try {
+    const file = ogLead && !ogLead.source ? ogLead.file : leadImage(article);
+    og = `https://www.chillinwithpras.com${findImage(file).src}`;
+  } catch {
+    try {
+      og = `https://www.chillinwithpras.com${findImage(sectionCover(section)).src}`;
+    } catch {
+      /* keep default */
+    }
+  }
+}
 ---
 
 <Base
@@ -48,14 +73,18 @@ const og = `https://www.chillinwithpras.com${findImage(leadImage(article)).src}`
 
     {hero && (
       <div class="story__hero">
-        <Figure variant="single" files={[{ file: hero.file, alt: hero.alt || article.title }]} hero={true} />
+        {!hero.source || hero.source === 'legacy' ? (
+          <Figure variant="single" files={[{ file: hero.file, alt: hero.alt || article.title }]} hero={true} />
+        ) : (
+          <Figure variant="single" files={[{ imageId: hero.imageId, alt: hero.alt || article.title, caption: hero.caption, decorative: hero.decorative, size: hero.size }]} hero={true} isCms={true} />
+        )}
       </div>
     )}
 
     <ArticleBody blocks={bodyBlocks} dateline={article.dateline} />
   </article>
 
-  <ArticleNav article={article} section={section} />
+  <ArticleNav article={article} section={section} prev={prev} next={next} />
 </Base>
 
 <style>
