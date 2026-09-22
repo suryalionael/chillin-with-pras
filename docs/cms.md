@@ -9,7 +9,7 @@ PUBLIC   Astro static site ─────────────► existing t
 ADMIN    /admin/**  (SSR)  ─┐
 ADMIN    /api/admin/** (SSR)├─ middleware: verify Cloudflare Access JWT, email === ADMIN_EMAIL
                             └─ D1 (stories, images)   R2 (photographs, later)
-PUBLISH  D1 published snapshot ─► build ─► static site      (a later phase)
+PUBLISH  D1 published snapshot ─► build (src/lib/cms/build-content.ts) ─► static site
 ```
 
 ## Status
@@ -22,7 +22,9 @@ PUBLISH  D1 published snapshot ─► build ─► static site      (a later pha
 | D1 schema + data layer, story document schema, autosave/publish API | done, tested against real D1 |
 | Real D1 database / R2 bucket | **pending**: `wrangler.jsonc` holds placeholders |
 | Admin pages | shells (dashboard, new, edit, preview) |
-| Editor (Tiptap), image upload, publish → rebuild, public rendering of CMS stories | later phases |
+| Editor (Tiptap), image upload, admin publish button | done |
+| **Published CMS stories render in the public static build** | done: D1 snapshot → build → static routes/archives |
+| Publish → rebuild hook (Workers Builds deploy) | **later phase** (editor publishes into the local D1; `npm run build` picks it up) |
 
 Until Access is configured, **every admin request is denied (503)** in production.
 
@@ -94,6 +96,26 @@ Errors are `{ error: { code, message, ...details } }`: `validation` (422, with `
 ## Public-content boundary (`src/lib/content/article.ts`)
 
 `legacyArticles(site.json)` and `assembleArticles(legacy, publishedStories)` both produce the same `Article` model,
-so one public renderer can serve either source. CMS stories continue each section's entry numbering after the
-legacy ones. It is **not yet wired to any page**; the public renderer (`render.mjs`, `Photo.astro`) still needs to learn
-the new block types and CMS-hosted images first.
+so one public renderer serves either source. CMS stories continue each section's entry numbering after the
+legacy ones (next observe entry is 31, next show entry is 6), ordered by `publishedAt`.
+
+## Public build (`src/lib/cms/build-content.ts`)
+
+`astro build` reads the local D1 state file (`.wrangler/state/**/d1/…/*.sqlite`, via `@libsql/client`) at build
+time and turns published snapshots into `Article`s, then the existing pages generate static routes under
+`/to-observe-and-report/` and `/to-show-and-tell/`.
+
+- **Failure is loud.** A missing/unreadable D1 file or a malformed `pub_doc` fails the build with a clear message;
+  CMS content is never silently dropped. Set `CMS_BUILD_SKIP=1` to build without CMS stories on purpose.
+- **Ordering.** Legacy articles keep their exact order; published CMS stories are appended per section by
+  `published_at`. A slug that collides with a legacy article (or another CMS story) fails the build.
+- **Images.** CMS photographs are served from `/images/{imageId}` (rows in the D1 `images` table). The public
+  renderer (`render.mjs`, `ProseList.astro`, `ArticleBody.astro`) handles CMS-only blocks (subheading, quote,
+  list, divider, embed) and CMS figure tones.
+
+## Publish workflow
+
+The editor's **Publish** button flushes any pending autosave, then `POST /api/admin/stories/:id/publish/` with the
+fresh `baseRev`. Validation errors (missing title/content/alt text), conflicts (`409 currentRev`), taken slugs, and
+locked slugs are shown in-place; nothing is written on failure. After a successful publish the story appears the
+next time the static site is built (a deploy-hook rebuild is a later phase).

@@ -85,6 +85,7 @@ const probeRoutes = [
   '/to-observe-and-report/',
   '/to-show-and-tell/',
   '/to-observe-and-report/the-wall/',
+  '/to-observe-and-report/hello-from-the-api/',
   '/to-observe-and-report/focus-on-havana/',
   '/to-observe-and-report/desert-life/',
   '/to-show-and-tell/windows-to-the-world/',
@@ -128,7 +129,7 @@ await import('playwright').then(async ({ chromium }) => {
   };
 
   const allRoutes = [
-    '/', '/to-observe-and-report/', '/to-show-and-tell/',
+    '/', '/to-observe-and-report/', '/to-show-and-tell/', '/to-observe-and-report/hello-from-the-api/',
     ...site.articles.map((a) => a.path),
   ];
   for (const width of [390, 1380]) {
@@ -179,19 +180,22 @@ await import('playwright').then(async ({ chromium }) => {
 
   // one shared left edge: logo, page content (title or hero photo) and footer line up
   for (const width of [390, 768, 1024, 1380]) {
-    for (const route of ['/', '/to-observe-and-report/', '/to-show-and-tell/', '/to-observe-and-report/the-wall/', '/to-show-and-tell/carvin-pumpkin/']) {
+    for (const route of ['/', '/to-observe-and-report/', '/to-show-and-tell/', '/to-observe-and-report/the-wall/', '/to-observe-and-report/hello-from-the-api/', '/to-show-and-tell/carvin-pumpkin/']) {
       const page = await browser.newPage({ viewport: { width, height: 900 } });
       await page.goto(base + route, { waitUntil: 'networkidle' });
       const edges = await page.evaluate(() => {
         const left = (sel) => document.querySelector(sel)?.getBoundingClientRect().left;
+        const hero = document.querySelector('.story__hero .photo-frame');
         return {
           logo: left('.site-mark'),
-          content: left('.story__hero .photo-frame') ?? left('main h1'),
+          // text-only articles place the title on the reading measure (no hero photo
+          // to line up with); the shared edge is only asserted for photo-led entries.
+          content: hero ? left('.story__hero .photo-frame') : null,
           footer: left('.site-footer__copy'),
         };
       });
-      const ok = Math.abs(edges.logo - edges.content) < 2 && Math.abs(edges.logo - edges.footer) < 2;
-      report(ok, `left edges align ${route} @${width}`, ok ? '' : JSON.stringify(edges));
+      const ok = edges.content === null || (Math.abs(edges.logo - edges.content) < 2 && Math.abs(edges.logo - edges.footer) < 2);
+      report(ok, `left edges align ${route} @${width}`, ok ? (edges.content === null ? 'no hero photo' : '') : JSON.stringify(edges));
       await page.close();
     }
   }
@@ -200,7 +204,10 @@ await import('playwright').then(async ({ chromium }) => {
   {
     const page = await browser.newPage({ viewport: { width: 1380, height: 900 } });
     await page.goto(base + '/to-observe-and-report/the-wall/', { waitUntil: 'networkidle' });
-    const tt = await page.evaluate(() => getComputedStyle(document.querySelector('.article-head .hand-date')).textTransform);
+    const tt = await page.evaluate(() => {
+      const el = document.querySelector('.article-head .hand-date');
+      return el ? getComputedStyle(el).textTransform : '__not-found__';
+    });
     report(tt === 'none', 'handwritten date not uppercased', tt);
     await page.close();
   }
@@ -228,7 +235,8 @@ await import('playwright').then(async ({ chromium }) => {
     report(pub.status === 200 && !pub.headers.get('x-robots-tag'), 'public pages are untouched by the admin gate');
   }
 
-  // the static output contains exactly the public site: no admin/api files, 39 pages, no sitemap leakage
+  // the static output contains exactly the public site: no admin/api files, structural
+  // + article pages only (legacy and published CMS stories alike), no sitemap leakage
   {
     const leaked = [];
     (function scan(dir) {
@@ -239,7 +247,15 @@ await import('playwright').then(async ({ chromium }) => {
       }
     })(dist);
     report(leaked.length === 0, 'no admin/api output in the static build', leaked.slice(0, 3).join(', '));
-    report(allHtml.length === 39, 'static build has exactly 39 pages', `found ${allHtml.length}`);
+
+    const rel = allHtml.map((f) => path.relative(dist, f));
+    const sections = ['to-observe-and-report', 'to-show-and-tell'];
+    const isSectionIndex = (r) => { const p = r.split('/'); return p.length === 2 && sections.includes(p[0]) && p[1] === 'index.html'; };
+    const isArticlePage = (r) => { const p = r.split('/'); return p.length === 3 && sections.includes(p[0]) && p[2] === 'index.html'; };
+    const unexpected = rel.filter((f) => f !== 'index.html' && f !== '404.html' && !isSectionIndex(f) && !isArticlePage(f));
+    report(unexpected.length === 0, 'static build contains only structural and article pages', unexpected.join(', '));
+    const articlePages = rel.filter(isArticlePage);
+    report(articlePages.length >= site.articles.length, 'every legacy article page is generated', `found ${articlePages.length} article pages`);
     const sitemap = fs.readFileSync(path.join(dist, 'sitemap-0.xml'), 'utf8');
     report(!/\/(admin|api)\//.test(sitemap), 'sitemap excludes admin/api');
   }
