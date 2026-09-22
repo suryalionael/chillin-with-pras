@@ -6,8 +6,8 @@ import type { D1Like, D1StatementLike } from './db.ts';
 
 const MIGRATIONS = new URL('../../../migrations/', import.meta.url);
 
-export function createTestDb(): D1Like & { exec(sql: string): void } {
-  const sqlite = new DatabaseSync(':memory:');
+export function createTestDb(path = ':memory:'): D1Like & { exec(sql: string): void } {
+  const sqlite = new DatabaseSync(path);
   for (const file of readdirSync(MIGRATIONS).filter((f) => f.endsWith('.sql')).sort()) {
     sqlite.exec(readFileSync(new URL(file, MIGRATIONS), 'utf8'));
   }
