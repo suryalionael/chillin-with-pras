@@ -201,6 +201,59 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
     await saveWithDebounce(true);
   }, [status, saveWithDebounce]);
 
+  const handlePublish = useCallback(async () => {
+    if (status === 'saving') return;
+    cancelSave();
+    setStatus('saving');
+    setError(null);
+
+    // Flush the working draft first so the publish posts exactly what is on screen.
+    let baseRev = rev;
+    try {
+      const saved = await onSave({ ...doc, title, subtitle }, rev);
+      if (saved) {
+        setRev(saved.draftRev);
+        baseRev = saved.draftRev;
+      }
+    } catch (e) {
+      if (e instanceof Response && e.status === 409) {
+        const data = await e.json();
+        setShowConflict({ currentRev: data.error.currentRev });
+      } else {
+        setError(e instanceof Error ? e.message : 'Could not save before publishing.');
+      }
+      setStatus('error');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/admin/stories/${storyId}/publish/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ baseRev }),
+        credentials: 'same-origin',
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (res.status === 409 && data.error?.code === 'conflict') {
+          setShowConflict({ currentRev: data.error.currentRev });
+        } else if (res.status === 422 && Array.isArray(data.error?.issues)) {
+          setError(data.error.issues.map((i: { message: string }) => i.message).join(' '));
+        } else {
+          setError(data.error?.message || 'Publish failed');
+        }
+        setStatus('error');
+        return;
+      }
+      setStatus('saved');
+      setError(null);
+      setTimeout(() => setStatus('idle'), 2000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Publish failed');
+      setStatus('error');
+    }
+  }, [status, cancelSave, doc, title, subtitle, rev, onSave, storyId]);
+
   const handleConflictResolve = useCallback(async (useLocal: boolean) => {
     if (!showConflict) return;
     if (useLocal) {
@@ -267,7 +320,9 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
         <div className="editor-header__right">
           <button className="admin-btn admin-btn--quiet" onClick={handleSave} disabled={status !== 'unsaved' && status !== 'error'}>Save</button>
           <a className="admin-btn admin-btn--quiet" href={`/admin/stories/${storyId}/preview/`}>Preview</a>
-          <button className="admin-btn" disabled aria-disabled="true">Publish</button>
+          <button className="admin-btn" onClick={handlePublish} disabled={status === 'saving'}>
+            {status === 'saving' ? 'Publishing…' : 'Publish'}
+          </button>
         </div>
       </header>
 
