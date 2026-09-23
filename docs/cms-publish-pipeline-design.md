@@ -567,6 +567,15 @@ workflow also accepts `workflow_dispatch` → a dedicated `ci-dry-run` job:
 The dry run is safe to run on a public repository: it never reads or writes production CMS data, never calls
 Cloudflare, and never requires production secrets.
 
+### GitHub Pages preview (temporary public layer)
+
+Separate from the publish-deploy (Cloudflare) path, `deploy-pages.yml` builds the static site for GitHub
+Pages at `/chillin-with-pras/`. It consumes the **committed** published snapshot (`.cms/snapshot.json`,
+written by `npm run cms:publish-pages` from the local D1) and committed CMS media (`media-manifest.json`),
+so Pages never needs D1/R2/Worker access. Base path is applied only under `ASTRO_PAGES_BASE`; root/Cloudflare
+builds are unaffected. This keeps the Cloudflare migration identical — only the hosting destination differs.
+See `docs/cms-production.md` §20 for the writing workflow.
+
 ### Blockers encountered
 
 None that stop the code-side implementation. All authorization needed for the local/CI code path is injectable
