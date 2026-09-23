@@ -13,7 +13,8 @@
     "types": "wrangler types --strict-vars=false",
     "typecheck": "wrangler types --strict-vars=false && astro check",
     "test": "node --test \"src/**/*.test.ts\"",
-    "db:migrate:local": "wrangler d1 migrations apply DB --local"
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "cms:publish-pages": "node scripts/publish-pages.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.2",
