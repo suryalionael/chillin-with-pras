@@ -30,7 +30,9 @@ playwright-report/
 test-results/
 
 # build-time published-content snapshot (CI)
-.cms/
+.cms/*
+!.cms/fixtures/
+!.cms/fixtures/**
 
 # any other local env files
 .env.*

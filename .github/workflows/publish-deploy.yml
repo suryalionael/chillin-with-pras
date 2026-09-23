@@ -1,30 +1,118 @@
 name: publish-deploy
 
-# Dispatched by the CMS publish endpoint (repository_dispatch, event_type
-# "cms-publish") after a story is published. Builds the static site from the
-# published-content snapshot served by the Worker, then deploys it, then reports
-# the outcome back to the Worker status endpoint.
+# Two entry points:
 #
-# Requires GitHub + Cloudflare secrets (set in repository Settings → Secrets and
-# variables → Actions). None exist in this repository yet; they are listed in
-# docs/cms-publish-pipeline-design.md §12.
+# 1. CI DRY RUN (safe, default)
+#    workflow_dispatch → builds from a checked-in snapshot fixture, runs the full
+#    test/typecheck/QA pipeline, uploads dist/ as an artifact. NO Cloudflare
+#    deploy, NO production snapshot fetch, NO status callbacks.
+#
+# 2. PRODUCTION (requires configured secrets — not yet present)
+#    repository_dispatch (event_type cms-publish) fires from the CMS publish
+#    endpoint. Fetches the live published-content snapshot from the Worker,
+#    builds, deploys via wrangler, and reports status back.
+#
+# The deploy job is guarded so it can only run on repository_dispatch, and the
+# production steps all fail if the required secrets are unset.
 
 on:
   repository_dispatch:
     types: [cms-publish]
+  workflow_dispatch:
+    inputs:
+      ci_only:
+        description: 'Dry-run mode (never deploy)'
+        type: boolean
+        default: true
 
 permissions:
   contents: read
 
+env:
+  CI_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' }}
+  CI_NODE_VERSION: '22'
+
 jobs:
-  build-and-deploy:
+  # ---------------- CI DRY RUN (validates the builder remotely) ----------------
+  ci-dry-run:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ env.CI_NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Build static site from CI snapshot fixture
+        run: CMS_SNAPSHOT_FILE=.cms/fixtures/ci-snapshot.json npm run build
+
+      - name: Verify static output
+        run: node scripts/verify-dist.mjs .cms/fixtures/ci-snapshot.json
+
+      - name: Install Playwright chromium for QA
+        run: npx playwright install --with-deps chromium
+
+      - name: Run QA suite + screenshots against preview
+        run: |
+          set -e
+          npx astro preview --host 0.0.0.0 --port 4321 > /tmp/astro-preview.log 2>&1 &
+          PREVIEW_PID=$!
+          trap "kill $PREVIEW_PID 2>/dev/null || true" EXIT
+          for i in $(seq 1 60); do
+            if curl -fsS -o /dev/null http://localhost:4321/; then echo "preview up"; break; fi
+            sleep 1
+          done
+          node scripts/qa.mjs
+          node scripts/shots.mjs
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cms-publish-ci-dry-run
+          path: dist
+          if-no-files-found: error
+
+      - name: CI DRY RUN COMPLETE
+        run: |
+          echo "=============================================="
+          echo "CI DRY RUN COMPLETE — NO CLOUDFLARE DEPLOYMENT PERFORMED"
+          echo "=============================================="
+
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "## CI dry run result"
+            echo
+            echo "- tests: ran"
+            echo "- typecheck: ran"
+            echo "- build: ran (CMS_SNAPSHOT_FILE fixture)"
+            echo "- QA: ran"
+            echo "- artifact: \`cms-publish-ci-dry-run\` (dist/)"
+            echo "- **Cloudflare deployment: SKIPPED INTENTIONALLY**"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ------------- PRODUCTION (secrets required — not yet configured) ------------
+  build-and-deploy:
+    if: github.event_name == 'repository_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.CI_NODE_VERSION }}
           cache: npm
 
       - name: Install dependencies
@@ -32,6 +120,8 @@ jobs:
 
       - name: Fetch published-content snapshot
         run: |
+          test -n "${{ secrets.CMS_PIPELINE_TOKEN }}" && test -n "${{ vars.CMS_SNAPSHOT_URL }}" \
+            || { echo "production pipeline secrets are not configured"; exit 1; }
           mkdir -p .cms
           curl -fsS \
             -H "Authorization: Bearer ${{ secrets.CMS_PIPELINE_TOKEN }}" \
