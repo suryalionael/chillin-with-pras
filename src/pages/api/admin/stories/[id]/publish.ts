@@ -3,6 +3,7 @@ import { adminEndpoint, failureResponse, isUuid, json, notFound, readJson, story
 import { publishStory } from '../../../../../lib/cms/db.ts';
 import { isLegacySlug } from '../../../../../lib/cms/legacy-slugs.ts';
 import { jsonError } from '../../../../../lib/cms/guard.ts';
+import { githubDispatchTrigger, nextRevision, requestDeployment } from '../../../../../lib/cms/deploy.ts';
 
 export const prerender = false;
 
@@ -13,16 +14,19 @@ export const prerender = false;
  *   { "baseRev": 8, "publishedAt"?: "YYYY-MM-DD", "slug"?: string }
  *
  * baseRev must equal the current draft revision: you publish exactly what you last saw.
- * Copies draft -> published snapshot atomically.
+ * Copies draft -> published snapshot atomically, then records a durable deployment
+ * request (monotonic revision) and fires the deploy trigger (best-effort).
  *
- *   200 { story, build: { triggered: false } }
+ *   200 { story, build: { triggered, revision, status, error? } }
  *   409 conflict | slug_taken | locked      422 validation (missing title/content/alt text…)
  *
- * `build.triggered` is always false for now: rebuilding the static site on publish
- * (a Workers Builds deploy hook) is a later phase.
+ * Publishing the CMS snapshot and requesting the static deployment are separate
+ * events. A trigger failure never undoes the publish (content is authoritative);
+ * it is surfaced as `build.triggered=false` and the deployment row stays
+ * `deploy_requested`.
  */
 export const POST: APIRoute = (context) =>
-  adminEndpoint(context, async ({ db, request }) => {
+  adminEndpoint(context, async ({ db, env, request }) => {
     const id = context.params.id;
     if (!isUuid(id)) return notFound();
 
@@ -40,5 +44,32 @@ export const POST: APIRoute = (context) =>
       { baseRev: v.baseRev as number, publishedAt: v.publishedAt as string | undefined, slug: v.slug as string | undefined },
       { isSlugReserved: isLegacySlug },
     );
-    return result.ok ? json({ story: storyJson(result.story), build: { triggered: false } }) : failureResponse(result);
+    if (!result.ok) return failureResponse(result);
+
+    // Content is now published. Record a durable deployment request. If this
+    // bookkeeping fails, the publish stands and we report that no deployment
+    // was requested rather than pretending one was.
+    let build: { triggered: boolean; revision: number | null; status: string; requested: boolean; error: string | null };
+    try {
+      const revision = await nextRevision(db);
+      const deployment = await requestDeployment(db, {
+        revision,
+        storyId: result.story.id,
+        publishedAt: result.story.publishedAt ?? result.story.pubUpdatedAt ?? new Date().toISOString(),
+        payload: { slug: result.story.slug, title: result.story.draft.title },
+      });
+      const trigger = await githubDispatchTrigger(env as Parameters<typeof githubDispatchTrigger>[0], deployment);
+      build = {
+        triggered: trigger.ok,
+        revision,
+        status: 'deploy_requested',
+        requested: true,
+        error: trigger.ok ? null : trigger.reason,
+      };
+    } catch (e) {
+      console.error('deployment request failed after publish', e instanceof Error ? e.message : e);
+      build = { triggered: false, revision: null, status: 'deploy_error', requested: false, error: 'Deployment request could not be recorded.' };
+    }
+
+    return json({ story: storyJson(result.story), build });
   });

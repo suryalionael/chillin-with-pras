@@ -79,6 +79,7 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
   const [showConflict, setShowConflict] = useState<{ currentRev: number } | null>(null);
   const [imagePickerOpen, setImagePickerOpen] = useState(false);
   const [pendingImageRange, setPendingImageRange] = useState<{ from: number; to: number } | null>(null);
+  const [publishNote, setPublishNote] = useState<string | null>(null);
 
   // @tiptap/suggestion v3 exports a ProseMirror plugin factory, not an
   // extension with .configure(). It must be wrapped in an Extension whose
@@ -219,6 +220,7 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
     cancelSave();
     setStatus('saving');
     setError(null);
+    setPublishNote(null);
 
     // Flush the working draft first so the publish posts exactly what is on screen.
     let baseRev = rev;
@@ -260,6 +262,14 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
       }
       setStatus('saved');
       setError(null);
+      const build = (data as { build?: { triggered?: boolean; revision?: number | null; status?: string; error?: string | null } } | null)?.build;
+      if (build && build.status && build.status !== 'deployed') {
+        if (build.error) setPublishNote(`Published. Deployment not started: ${build.error}`);
+        else if (build.status === 'deploy_requested') setPublishNote(`Published. Deployment requested (revision ${build.revision ?? '—'}).`);
+        else setPublishNote(`Published. Deployment ${build.status}.`);
+      } else {
+        setPublishNote(null);
+      }
       setTimeout(() => setStatus('idle'), 2000);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Publish failed');
@@ -346,6 +356,12 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
             <button className="admin-btn" onClick={() => handleConflictResolve(true)}>Keep my changes</button>
             <button className="admin-btn admin-btn--quiet" onClick={() => handleConflictResolve(false)}>Load server version</button>
           </div>
+        </div>
+      )}
+
+      {publishNote && (
+        <div className="editor-publish-note" role="status">
+          {publishNote}
         </div>
       )}
 

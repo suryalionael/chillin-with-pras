@@ -1,0 +1,130 @@
+---
+import type { deploymentSummary } from '../../lib/cms/deploy.ts';
+import type { Deployment } from '../../lib/cms/deploy.ts';
+
+interface Props {
+  summary: Awaited<ReturnType<typeof deploymentSummary>>;
+}
+const { summary } = Astro.props;
+
+const stateLabel: Record<Deployment['status'], string> = {
+  deploy_requested: 'Deployment requested — not yet started',
+  building: 'Building',
+  deployed: 'Deployed',
+  failed: 'Deployment failed',
+};
+
+const fmt = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' }) + ' UTC' : '—';
+---
+
+<section class="dash-section deploy" aria-labelledby="deploy-h">
+  <h2 id="deploy-h" class="dash-h">Deployments <span class="dash-count">{summary.latest.length}</span></h2>
+
+  <p class="deploy__headline">
+    {summary.current ? (
+      <>
+        <strong>Current public build:</strong> revision {summary.current.revision} ({stateLabel[summary.current.status]})
+        {summary.current.deployedAt && <> · {fmt(summary.current.deployedAt)}</>}
+        {summary.behind && <em class="deploy__flag">— a newer publish is not deployed yet</em>}
+      </>
+    ) : (
+      <><strong>No CMS deployment recorded yet.</strong> The 35 legacy articles always ship in the site itself.</>
+    )}
+  </p>
+
+  <ul class="deploy__list">
+    {summary.latest.map((d) => (
+      <li class="deploy__row">
+        <span class="deploy__rev">rev {d.revision}</span>
+        <span class:list={['deploy__state', `deploy__state--${d.status}`, d.superseded && 'deploy__state--superseded']}>
+          {stateLabel[d.status]}{d.superseded ? ' (superseded)' : ''}
+        </span>
+        <span class="deploy__meta">
+          {d.payload?.title ?? 'Untitled'} · {d.storyId.slice(0, 8)}
+          {d.buildId && <> · build {d.buildId}</>}
+        </span>
+        <span class="deploy__time">
+          requested {fmt(d.requestedAt)}
+          {d.deployedAt && <> · deployed {fmt(d.deployedAt)}</>}
+          {d.failedAt && <> · failed {fmt(d.failedAt)}</>}
+        </span>
+        {d.error && <span class="deploy__error">{d.error}</span>}
+      </li>
+    ))}
+  </ul>
+
+  <p class="deploy__note">
+    Publishing updates the CMS only; a deploy builds the static site from the published snapshot. A trigger or build
+    failure never undoes a publish.
+  </p>
+</section>
+
+<style>
+  .deploy__headline {
+    font-size: 1.15rem;
+    line-height: 1.6;
+  }
+  .deploy__flag {
+    color: var(--accent-warm);
+    font-family: var(--sans);
+    font-size: 0.95rem;
+  }
+  .deploy__list {
+    list-style: none;
+    padding: 0;
+    margin-top: 1.25rem;
+    max-width: 48rem;
+  }
+  .deploy__row {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    gap: 0.25rem 1rem;
+    align-items: baseline;
+    padding: 0.9rem 0;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--sans);
+    font-size: 0.95rem;
+  }
+  .deploy__rev {
+    font-family: var(--hand);
+    color: var(--accent-warm);
+    font-size: 1.3rem;
+  }
+  .deploy__state {
+    font-weight: 600;
+  }
+  .deploy__state--deployed {
+    color: #2d7d2d;
+  }
+  .deploy__state--failed {
+    color: #b33;
+  }
+  .deploy__state--building {
+    color: var(--accent-warm);
+  }
+  .deploy__state--superseded {
+    color: var(--ink-faint);
+    font-weight: 400;
+  }
+  .deploy__meta {
+    color: var(--ink-soft);
+  }
+  .deploy__time {
+    grid-column: 2 / -1;
+    color: var(--ink-faint);
+    font-size: 0.85rem;
+  }
+  .deploy__error {
+    grid-column: 2 / -1;
+    color: #b33;
+    font-size: 0.85rem;
+  }
+  .deploy__note {
+    margin-top: 1.25rem;
+    max-width: 48rem;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+</style>

@@ -1,22 +1,27 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import StoryList from '../../components/admin/StoryList.astro';
+import DeploymentStatus from '../../components/admin/DeploymentStatus.astro';
 import { getEnv } from '../../lib/cms/runtime.ts';
 import { listStories, type D1Like, type StorySummary } from '../../lib/cms/db.ts';
+import { deploymentSummary } from '../../lib/cms/deploy.ts';
 
 // Server-rendered on every request; never part of the static build.
 export const prerender = false;
 
 let drafts: StorySummary[] = [];
 let published: StorySummary[] = [];
+let deploy: Awaited<ReturnType<typeof deploymentSummary>> | null = null;
 let loadError: string | null = null;
 try {
   const env = await getEnv();
-  const all = await listStories(env.DB as unknown as D1Like);
+  const db = env.DB as unknown as D1Like;
+  const all = await listStories(db);
   drafts = all.filter((s) => s.status === 'draft');
   published = all
     .filter((s) => s.status === 'published')
     .sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''));
+  deploy = await deploymentSummary(db);
 } catch (error) {
   console.error('admin dashboard: could not load stories', error instanceof Error ? error.message : error);
   loadError = import.meta.env.DEV
@@ -45,6 +50,8 @@ try {
     <h2 id="published-h" class="dash-h">Published <span class="dash-count">{published.length}</span></h2>
     <StoryList stories={published} kind="published" emptyText="Nothing published from here yet. The 35 original stories live in the site itself and are not listed." />
   </section>
+
+  {deploy && <DeploymentStatus summary={deploy} />}
 </AdminLayout>
 
 <style>

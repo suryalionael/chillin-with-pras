@@ -6,3 +6,10 @@
 # It has no effect in production: the bypass code is removed from production
 # builds, and it is only ever considered when import.meta.env.DEV is true.
 DEV_ADMIN_BYPASS=true
+
+# Local development only. The value below is whatever you like locally; it is
+# what the local /api/deploy/snapshot/ and /api/deploy/status/ endpoints accept
+# so you can simulate the CI pipeline (see docs/cms-publish-pipeline-design.md
+# section 10). In production this is a real secret set with
+# `wrangler secret put CMS_PIPELINE_TOKEN`.
+CMS_PIPELINE_TOKEN=dev-pipeline-token
