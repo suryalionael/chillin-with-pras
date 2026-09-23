@@ -1,5 +1,6 @@
 ---
 import site, { SECTIONS, articlesIn } from '../lib/site.mjs';
+import { u } from '../lib/url.mjs';
 
 const current = Astro.props.current ?? '';
 const nav = [
@@ -18,7 +19,7 @@ function isActive(key) {
 
 <header class="site-header">
   <div class="container site-header__row">
-    <a class="site-mark" href="/" aria-label="Chillin with Pras — home">
+    <a class="site-mark" href={u("/")} aria-label="Chillin with Pras — home">
       <span class="site-mark__serif">Chillin’ with Pras</span>
       <span class="site-mark__hand">the archive</span>
     </a>
@@ -28,7 +29,7 @@ function isActive(key) {
         {
           nav.map((item) => (
             <li>
-              <a class:list={['site-nav__link', { 'is-current': isActive(item.key) }]} href={item.path} aria-current={isActive(item.key) ? 'page' : undefined}>
+              <a class:list={['site-nav__link', { 'is-current': isActive(item.key) }]} href={u(item.path)} aria-current={isActive(item.key) ? 'page' : undefined}>
                 {item.label}
                 <span class="site-nav__underscore" aria-hidden="true"></span>
               </a>
@@ -43,17 +44,17 @@ function isActive(key) {
         <span class="label">Menu</span>
       </summary>
       <div class="site-menu__panel">
-        <a class="site-menu__item" href="/" aria-current={current === '/' ? 'page' : undefined}>Home</a>
-        <a class="site-menu__group" href={SECTIONS.observe.path} aria-current={current === SECTIONS.observe.path ? 'page' : undefined}>To Observe &amp; Report</a>
+        <a class="site-menu__item" href={u("/")} aria-current={current === '/' ? 'page' : undefined}>Home</a>
+        <a class="site-menu__group" href={u(SECTIONS.observe.path)} aria-current={current === SECTIONS.observe.path ? 'page' : undefined}>To Observe &amp; Report</a>
         {
           articlesIn('observe').map((a) => (
-            <a class="site-menu__item site-menu__item--sub" href={a.path} aria-current={current === a.path ? 'page' : undefined}>{a.title}</a>
+            <a class="site-menu__item site-menu__item--sub" href={u(a.path)} aria-current={current === a.path ? 'page' : undefined}>{a.title}</a>
           ))
         }
-        <a class="site-menu__group" href={SECTIONS.show.path} aria-current={current === SECTIONS.show.path ? 'page' : undefined}>To Show &amp; Tell</a>
+        <a class="site-menu__group" href={u(SECTIONS.show.path)} aria-current={current === SECTIONS.show.path ? 'page' : undefined}>To Show &amp; Tell</a>
         {
           articlesIn('show').map((a) => (
-            <a class="site-menu__item site-menu__item--sub" href={a.path} aria-current={current === a.path ? 'page' : undefined}>{a.title}</a>
+            <a class="site-menu__item site-menu__item--sub" href={u(a.path)} aria-current={current === a.path ? 'page' : undefined}>{a.title}</a>
           ))
         }
       </div>

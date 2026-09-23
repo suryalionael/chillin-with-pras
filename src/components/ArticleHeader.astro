@@ -1,5 +1,6 @@
 ---
 import { SECTIONS, two } from '../lib/site.mjs';
+import { u } from '../lib/url.mjs';
 import EditorialTitle from './EditorialTitle.astro';
 
 const { section, entry, dateline = '' } = Astro.props;
@@ -8,7 +9,7 @@ const sec = SECTIONS[section] || { title: '' };
 
 <header class="article-head">
   <p class="article-head__run label">
-    <a class="article-head__section" href={sec.path}>{sec.title}</a>
+    <a class="article-head__section" href={u(sec.path)}>{sec.title}</a>
     <span class="meta article-head__meta">
       <span>entry {two(entry)}</span>
       {dateline && <span class="meta__dot" aria-hidden="true">·</span>}

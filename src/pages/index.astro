@@ -2,6 +2,8 @@
 import Base from '../layouts/Base.astro';
 import Photo from '../components/Photo.astro';
 import { ratio } from '../lib/images';
+import { cmsImageUrl } from '../lib/cms/pages-images.mjs';
+import { u } from '../lib/url.mjs';
 import site, { SECTIONS, sectionDesc, sectionCover } from '../lib/site.mjs';
 import { getArticlesInSection } from '../lib/cms/build-content.ts';
 
@@ -78,7 +80,7 @@ function excerpt(article: { blocks: import('../lib/content/article.ts').ArticleB
             <div class="chapter__text">
               <p class="chapter__num">{c.n}</p>
               <h3 class="chapter__title">
-                <a href={SECTIONS[c.key].path}>{c.key === 'observe' ? 'To Observe & Report' : 'To Show & Tell'}</a>
+                <a href={u(SECTIONS[c.key].path)}>{c.key === 'observe' ? 'To Observe & Report' : 'To Show & Tell'}</a>
               </h3>
               <p class="chapter__desc">{sectionDesc(c.key)[0]}</p>
               <p class="chapter__count hand-date">{c.count} entries</p>
@@ -111,7 +113,7 @@ function excerpt(article: { blocks: import('../lib/content/article.ts').ArticleB
                   />
                 ) : lead && lead.source === 'cms' ? (
                   <img
-                    src={`/images/${lead.imageId}`}
+                    src={cmsImageUrl(lead.imageId)}
                     alt={lead.decorative ? '' : lead.alt || a.title}
                     loading={i === 0 ? 'eager' : 'lazy'}
                     decoding="async"
@@ -130,7 +132,7 @@ function excerpt(article: { blocks: import('../lib/content/article.ts').ArticleB
                   {a.dateline && <span class="hand-date">{a.dateline}</span>}
                 </p>
                 <h3 class="pick__title">
-                  <a href={a.path}>{a.title}</a>
+                  <a href={u(a.path)}>{a.title}</a>
                 </h3>
                 <p class="pick__excerpt">{excerpt(a)}</p>
                 <p class="pick__cta" aria-hidden="true"><span class="more">Read the entry <span class="more__arrow">→</span></span></p>

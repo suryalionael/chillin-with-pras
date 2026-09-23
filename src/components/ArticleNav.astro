@@ -3,6 +3,8 @@
 // reading journey continues; previous / all entries sit quietly underneath.
 import Photo from './Photo.astro';
 import { SECTIONS, sectionCover } from '../lib/site.mjs';
+import { cmsImageUrl } from '../lib/cms/pages-images.mjs';
+import { u } from '../lib/url.mjs';
 
 const { article, section, prev = null, next = null } = Astro.props;
 const sec = SECTIONS[section];
@@ -28,7 +30,7 @@ const target = next
     <div class="upnext__media photo-frame">
       {nextMedia.kind === 'cms' ? (
         <img
-          src={`/images/${nextMedia.imageId}`}
+          src={cmsImageUrl(nextMedia.imageId)}
           alt=""
           class="photo"
           loading="lazy"
@@ -57,14 +59,14 @@ const target = next
 
   <div class="article-nav__foot">
     {prev ? (
-      <a class="article-nav__link" href={prev.path}>
+      <a class="article-nav__link" href={u(prev.path)}>
         <span class="label">← Previous entry</span>
         <span class="article-nav__title">{prev.title}</span>
       </a>
     ) : (
       <span></span>
     )}
-    <a class="article-nav__link article-nav__link--right" href={sec.path}>
+    <a class="article-nav__link article-nav__link--right" href={u(sec.path)}>
       <span class="label">All entries</span>
       <span class="article-nav__title">{sec.title}</span>
     </a>
