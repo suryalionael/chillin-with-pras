@@ -44,6 +44,11 @@ function walk(dir) {
 walk(dist);
 
 const linkRx = /href="([^"#]+)"/g;
+// Worker/dynamic delivery routes that are not static files in dist: CMS images
+// (/images/{id}) are served by the Worker (R2) or copied CM media on Pages,
+// and /_image* is the Astro runtime image endpoint. Both exist only at request
+// time, so the static-link walker must not demand a matching file.
+const DYNAMIC_PREFIX = ['/images/', '/_image'];
 for (const htmlFile of allHtml) {
   const html = fs.readFileSync(htmlFile, 'utf8');
   const hrefs = [...html.matchAll(linkRx)].map((m) => m[1]).filter((h) => !h.includes('://'));
@@ -53,6 +58,7 @@ for (const htmlFile of allHtml) {
   for (let c of candidates) {
     c = c.split('?')[0];
     if (c === '/') continue;
+    if (DYNAMIC_PREFIX.some((p) => c.startsWith(p))) continue;
     let target = c.startsWith('/') ? c.slice(1) : c;
     // resolve against dist root for absolute, page dir for relative
     const baseDir = c.startsWith('/') ? dist : path.dirname(htmlFile);
@@ -80,6 +86,11 @@ console.log('[DONE] link integrity checked');
 // ---------- 3. Browser probes (overflow / status / image resource failures) ----------
 const base = 'http://localhost:4321';
 const widths = [390, 768, 1024, 1380];
+// Runtime-served image routes are fine to error in the static preview only:
+// /images/{id} needs the Worker/R2 (or copied media on Pages) and /_image is
+// the Astro runtime endpoint. They are exercised separately against the real
+// deployment.
+const dynamicImageUrl = (url) => new URL(url).pathname.startsWith('/images/') || new URL(url).pathname.startsWith('/_image');
 const probeRoutes = [
   '/',
   '/to-observe-and-report/',
@@ -99,10 +110,10 @@ await import('playwright').then(async ({ chromium }) => {
     const page = await browser.newPage();
     const resErrors = [];
     page.on('response', (r) => {
-      if (r.status() >= 400 && r.request().resourceType() === 'image') resErrors.push(`${r.status()} ${r.request().url().slice(-30)}`);
+      if (r.status() >= 400 && r.request().resourceType() === 'image' && !dynamicImageUrl(r.url())) resErrors.push(`${r.status()} ${r.request().url().slice(-30)}`);
     });
     page.on('requestfailed', (req) => {
-      if (req.resourceType() === 'image') resErrors.push('failed ' + req.url().slice(-30));
+      if (req.resourceType() === 'image' && !dynamicImageUrl(req.url())) resErrors.push('failed ' + req.url().slice(-30));
     });
     for (const width of widths) {
       await page.setViewportSize({ width, height: 900 });
@@ -140,6 +151,9 @@ await import('playwright').then(async ({ chromium }) => {
       const res = await page.evaluate(() => {
         const out = { soft: [], tiny: [], broken: [], hand: [], overflow: document.documentElement.scrollWidth - innerWidth };
         for (const img of document.querySelectorAll('main img')) {
+          // skip runtime-served CMS/Astro images (needs Worker/R2 or Pages media)
+          const src = img.getAttribute('src') || img.currentSrc || '';
+          if (src.startsWith('/images/') || src.startsWith('/_image')) continue;
           const r = img.getBoundingClientRect();
           if (!img.complete || img.naturalWidth === 0) out.broken.push(img.currentSrc.slice(-30));
           // the largest file offered in srcset must comfortably cover the displayed size
