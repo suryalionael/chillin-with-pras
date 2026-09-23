@@ -1,8 +1,9 @@
+import { Extension } from '@tiptap/core';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Link from '@tiptap/extension-link';
-import Suggestion from '@tiptap/suggestion';
+import Suggestion, { type SuggestionOptions } from '@tiptap/suggestion';
 import { v4 as uuidv4 } from 'crypto';
 import type { StoryDocument } from '../../lib/cms/schema.ts';
 import { FloatingToolbar } from './FloatingToolbar.tsx';
@@ -12,7 +13,7 @@ import { useLocalBackup } from './useLocalBackup.ts';
 import { Image } from './ImageExtension.ts';
 import { Embed } from './EmbedExtension.ts';
 import { ImagePicker } from './ImagePicker.tsx';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
 interface StoryEditorProps {
   storyId: string;
@@ -23,12 +24,13 @@ interface StoryEditorProps {
   onSubtitleChange: (subtitle: string) => void;
 }
 
-const EXTENSIONS = [
+const BASE_EXTENSIONS = [
   StarterKit.configure({
     heading: { levels: [2, 3] },
     bulletList: { keepMarks: true, keepAttributes: false },
     orderedList: { keepMarks: true, keepAttributes: false },
     blockquote: { keepMarks: true, keepAttributes: false },
+    link: false,
   }),
   Placeholder.configure({
     placeholder: ({ node }) => {
@@ -53,40 +55,18 @@ const EXTENSIONS = [
       }
     },
   }),
-  Suggestion.configure({
-    char: '/',
-    allow: ({ state, range }) => {
-      const $from = state.doc.resolve(range.from);
-      const nodeType = $from.parent.type;
-      return nodeType.name === 'paragraph' && $from.parent.textContent.length === 0 && $from.parentOffset === 0;
-    },
-    items: [
-      { title: 'Paragraph', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setParagraph().run() },
-      { title: 'Heading', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHeading({ level: 2 }).run() },
-      { title: 'Subheading', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHeading({ level: 3 }).run() },
-      { title: 'Quote', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setBlockquote().run() },
-      { title: 'Bulleted list', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleBulletList().run() },
-      { title: 'Numbered list', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleOrderedList().run() },
-      { title: 'Divider', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHorizontalRule().run() },
-      { title: 'Image', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).run() },
-      { title: 'Embed', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setEmbed({ url: '' }).run() },
-    ],
-    render: () => {
-      let component: SlashMenu | null = null;
-      return {
-        onStart: (props) => {
-          component = new SlashMenu(props);
-          component.setOnImagePickerRequest((range) => {
-            setPendingImageRange(range);
-            setImagePickerOpen(true);
-          });
-        },
-        onUpdate: (props) => { component?.update(props); },
-        onKeyDown: (props) => { return component?.onKeyDown(props) ?? false; },
-        onExit: () => { component?.destroy(); component = null; },
-      };
-    },
-  }),
+];
+
+const SLASH_ITEMS = [
+  { title: 'Paragraph', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setParagraph().run() },
+  { title: 'Heading', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHeading({ level: 2 }).run() },
+  { title: 'Subheading', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHeading({ level: 3 }).run() },
+  { title: 'Quote', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setBlockquote().run() },
+  { title: 'Bulleted list', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleBulletList().run() },
+  { title: 'Numbered list', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleOrderedList().run() },
+  { title: 'Divider', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHorizontalRule().run() },
+  { title: 'Image', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).run() },
+  { title: 'Embed', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setEmbed({ url: '' }).run() },
 ];
 
 export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleChange, onSubtitleChange }: StoryEditorProps) {
@@ -100,9 +80,49 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
   const [imagePickerOpen, setImagePickerOpen] = useState(false);
   const [pendingImageRange, setPendingImageRange] = useState<{ from: number; to: number } | null>(null);
 
+  // @tiptap/suggestion v3 exports a ProseMirror plugin factory, not an
+  // extension with .configure(). It must be wrapped in an Extension whose
+  // options are built here (the render() hooks need component state setters).
+  const extensions = useMemo(() => {
+    const slashMenu = Extension.create({
+      name: 'slash-menu',
+      addProseMirrorPlugins() {
+        return [
+          Suggestion({
+            char: '/',
+            editor: this.editor,
+            allow: ({ state, range }) => {
+              const $from = state.doc.resolve(range.from);
+              const nodeType = $from.parent.type;
+              return nodeType.name === 'paragraph' && $from.parent.textContent.length === 0 && $from.parentOffset === 0;
+            },
+            items: () => SLASH_ITEMS,
+            render: () => {
+              let component: SlashMenu | null = null;
+              return {
+                onStart: (props) => {
+                  component = new SlashMenu(props);
+                  component.setOnImagePickerRequest((range) => {
+                    setPendingImageRange(range);
+                    setImagePickerOpen(true);
+                  });
+                },
+                onUpdate: (props) => { component?.update(props); },
+                onKeyDown: (props) => { return component?.onKeyDown(props) ?? false; },
+                onExit: () => { component?.destroy(); component = null; },
+              };
+            },
+          }),
+        ];
+      },
+    });
+    return [...BASE_EXTENSIONS, slashMenu];
+  }, []);
+
   const editor = useEditor({
-    extensions: [...EXTENSIONS, Image, Embed],
+    extensions: [...extensions, Image, Embed],
     content: initialDoc.body,
+    autofocus: true,
     editorProps: {
       attributes: {
         class: 'prose-editor',
@@ -115,14 +135,11 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
       const newDoc = editor.getJSON();
       setDoc((prev) => ({ ...prev, body: newDoc }));
     },
-    onCreate: ({ editor }) => {
-      editor.commands.focus();
-    },
   });
 
   const { saveWithDebounce, cancelSave } = useAutosave({
     storyId,
-    getDoc: () => doc,
+    getDoc: () => ({ ...doc, title, subtitle }),
     getRev: () => rev,
     onSave: async (d, r) => {
       const result = await onSave(d, r);
@@ -158,31 +175,27 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
     },
   });
 
-  useEffect(() => {
-    const handleTitleChange = (value: string) => {
+  const handleTitleInput = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const value = e.target.value;
       setTitle(value);
       onTitleChange(value);
       setStatus('unsaved');
       saveWithDebounce();
-    };
-    const handleSubtitleChange = (value: string) => {
+    },
+    [onTitleChange, saveWithDebounce],
+  );
+
+  const handleSubtitleInput = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const value = e.target.value;
       setSubtitle(value);
       onSubtitleChange(value);
       setStatus('unsaved');
       saveWithDebounce();
-    };
-
-    const titleEl = document.getElementById('editor-title');
-    const subtitleEl = document.getElementById('editor-subtitle');
-
-    if (titleEl) titleEl.addEventListener('input', (e) => handleTitleChange((e.target as HTMLTextAreaElement).value));
-    if (subtitleEl) subtitleEl.addEventListener('input', (e) => handleSubtitleChange((e.target as HTMLTextAreaElement).value));
-
-    return () => {
-      if (titleEl) titleEl.removeEventListener('input', handleTitleChange);
-      if (subtitleEl) subtitleEl.removeEventListener('input', handleSubtitleChange);
-    };
-  }, [editor, onTitleChange, onSubtitleChange, saveWithDebounce]);
+    },
+    [onSubtitleChange, saveWithDebounce],
+  );
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -303,7 +316,7 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
   }, []);
 
   return (
-    <div className="editor-shell">
+    <div className="editor-shell" data-testid="editor-root">
       <header className="editor-header">
         <div className="editor-header__left">
           <a href="/admin/" className="editor-back">← Stories</a>
@@ -343,6 +356,7 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
             className="editor-title"
             placeholder="Title"
             value={title}
+            onChange={handleTitleInput}
             rows={1}
             aria-label="Story title"
           />
@@ -351,10 +365,11 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
             className="editor-subtitle"
             placeholder="Add a subtitle…"
             value={subtitle}
+            onChange={handleSubtitleInput}
             rows={1}
             aria-label="Story subtitle"
           />
-          <div className="editor-body">
+          <div className="editor-body" data-testid="editor-body">
             <EditorContent editor={editor} />
           </div>
         </div>

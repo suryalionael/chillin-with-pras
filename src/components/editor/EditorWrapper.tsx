@@ -1,16 +1,16 @@
 import { StoryEditor } from './StoryEditor.tsx';
-import { saveDraft } from '../../../lib/cms/db.ts';
-import { getEnv } from '../../../lib/cms/runtime.ts';
-import { type StoryDocument } from '../../../lib/cms/schema.ts';
+import type { StoryDocument } from '../../../lib/cms/schema.ts';
 import { useState, useCallback, useEffect } from 'react';
 
 interface EditorWrapperProps {
-  'story-id': string;
-  'initial-doc': string;
-  'initial-rev': number;
+  storyId: string;
+  initialDoc: string;
+  initialRev: number;
 }
 
-export function EditorWrapper({ 'story-id': storyId, 'initial-doc': initialDoc, 'initial-rev': initialRev }: EditorWrapperProps) {
+type SaveOutcome = { draftRev: number; draftUpdatedAt: string };
+
+export function EditorWrapper({ storyId, initialDoc, initialRev }: EditorWrapperProps) {
   const [doc, setDoc] = useState<StoryDocument>(JSON.parse(initialDoc));
   const [rev, setRev] = useState(initialRev);
   const [title, setTitle] = useState('');
@@ -23,22 +23,20 @@ export function EditorWrapper({ 'story-id': storyId, 'initial-doc': initialDoc, 
     setSubtitle(parsed.subtitle);
   }, [initialDoc]);
 
-  const handleSave = useCallback(async (d: StoryDocument, baseRev: number) => {
-    const env = await getEnv();
-    const result = await saveDraft(
-      env.DB as any,
-      storyId,
-      { baseRev, document: d },
-      { isSlugReserved: () => false }
-    );
-    if (result.ok) {
-      return { draftRev: result.draftRev, draftUpdatedAt: result.draftUpdatedAt };
-    }
-    if (result.reason === 'conflict') {
-      throw new Response(JSON.stringify({ error: { code: 'conflict', currentRev: result.currentRev } }), { status: 409 });
-    }
-    throw new Error(result.reason);
-  }, [storyId]);
+  const handleSave = useCallback(
+    async (d: StoryDocument, baseRev: number): Promise<SaveOutcome | null> => {
+      const res = await fetch(`/api/admin/stories/${storyId}/draft/`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ baseRev, document: d }),
+        credentials: 'same-origin',
+      });
+      if (!res.ok) throw res;
+      const data = await res.json();
+      return { draftRev: data.draftRev, draftUpdatedAt: data.draftUpdatedAt };
+    },
+    [storyId],
+  );
 
   const handleTitleChange = useCallback((newTitle: string) => {
     setTitle(newTitle);

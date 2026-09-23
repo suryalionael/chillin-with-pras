@@ -25,48 +25,54 @@ export function useAutosave({
   const lastSavedDocRef = useRef<string>('');
   const lastSavedRevRef = useRef<number>(getRev());
 
+  // Keep the latest callbacks in refs so a debounced flush always reads fresh
+  // state. The editor's title/subtitle live in state that updates asynchronously,
+  // so a closure captured at schedule time would save stale values.
+  const callbacksRef = useRef({ getDoc, getRev, onSave, onConflict, onError });
+  callbacksRef.current = { getDoc, getRev, onSave, onConflict, onError };
+  const storyIdRef = useRef(storyId);
+  storyIdRef.current = storyId;
+
   const hasChanges = useCallback(() => {
-    const current = JSON.stringify(getDoc());
+    const current = JSON.stringify(callbacksRef.current.getDoc());
     return current !== lastSavedDocRef.current;
-  }, [getDoc]);
+  }, []);
 
-  const saveWithDebounce = useCallback(
-    async (immediate = false) => {
-      if (!hasChanges() && !immediate) return null;
+  const saveNow = useCallback(async (immediate = false) => {
+    const { getDoc, getRev, onSave, onConflict, onError } = callbacksRef.current;
+    if (!hasChanges() && !immediate) return null;
 
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = undefined;
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = undefined;
+    }
+
+    if (pendingRef.current && !immediate) return null;
+
+    const doc = getDoc();
+    const baseRev = getRev();
+
+    pendingRef.current = true;
+
+    try {
+      const result = await onSave(doc, baseRev);
+      if (result) {
+        lastSavedDocRef.current = JSON.stringify(doc);
+        lastSavedRevRef.current = result.draftRev;
       }
-
-      if (pendingRef.current && !immediate) return null;
-
-      const doc = getDoc();
-      const baseRev = getRev();
-
-      pendingRef.current = true;
-
-      try {
-        const result = await onSave(doc, baseRev);
-        if (result) {
-          lastSavedDocRef.current = JSON.stringify(doc);
-          lastSavedRevRef.current = result.draftRev;
-        }
-        pendingRef.current = false;
-        return result;
-      } catch (err) {
-        pendingRef.current = false;
-        if (err instanceof Response && err.status === 409) {
-          const data = await err.json();
-          onConflict(data.error.currentRev);
-        } else {
-          onError(err instanceof Error ? err.message : 'Save failed');
-        }
-        return null;
+      pendingRef.current = false;
+      return result;
+    } catch (err) {
+      pendingRef.current = false;
+      if (err instanceof Response && err.status === 409) {
+        const data = await err.json();
+        onConflict(data.error.currentRev);
+      } else {
+        onError(err instanceof Error ? err.message : 'Save failed');
       }
-    },
-    [getDoc, getRev, hasChanges, onSave, onConflict, onError]
-  );
+      return null;
+    }
+  }, [hasChanges]);
 
   useEffect(() => {
     return () => {
@@ -76,8 +82,10 @@ export function useAutosave({
 
   const triggerSave = useCallback(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = window.setTimeout(() => saveWithDebounce(), debounceMs);
-  }, [saveWithDebounce, debounceMs]);
+    timeoutRef.current = window.setTimeout(() => {
+      void saveNow();
+    }, debounceMs);
+  }, [saveNow, debounceMs]);
 
   const cancelSave = useCallback(() => {
     if (timeoutRef.current) {

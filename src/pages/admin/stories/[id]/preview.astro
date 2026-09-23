@@ -1,5 +1,6 @@
 ---
 import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import { PreviewWrapper } from '../../../../components/editor/PreviewWrapper.tsx';
 import { getEnv } from '../../../../lib/cms/runtime.ts';
 import { getStory, type D1Like, type Story } from '../../../../lib/cms/db.ts';
 import { isUuid } from '../../../../lib/cms/api.ts';
@@ -27,10 +28,10 @@ if (!story) Astro.response.status = 404;
       </>
     ) : (
       <div data-story-id={story.id} data-draft-rev={story.draftRev}>
-        <preview-wrapper
+        <PreviewWrapper
           client:only="react"
-          initial-doc={JSON.stringify(story.draft)}
-          story-id={story.id}
+          storyId={story.id}
+          initialDoc={JSON.stringify(story.draft)}
         />
       </div>
     )
