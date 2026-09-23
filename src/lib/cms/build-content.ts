@@ -1,8 +1,13 @@
 // Build-time CMS content fetcher.
 // Runs during Astro build (Node environment) to fetch published CMS stories
-// from D1 and convert them to the Article model for static generation.
+// and convert them to the Article model for static generation.
 //
-// Failure policy: a missing/unreadable local D1, or a malformed published
+// Two source modes:
+//   local dev : reads the local D1 SQLite state file via @libsql/client
+//   CI/remote : reads a published-content snapshot file (CMS_SNAPSHOT_FILE)
+//               produced by GET /api/deploy/snapshot/ (the deploy pipeline)
+//
+// Failure policy: a missing/unreadable source, or a malformed published
 // document, fails the build loudly rather than silently dropping content.
 // Set CMS_BUILD_SKIP=1 to build without CMS stories on purpose.
 
@@ -28,6 +33,32 @@ const LOCAL_DB_PATH = findLocalDbPath();
 
 /** Skip reading CMS stories entirely (build with legacy content only). */
 export const CMS_BUILD_SKIP = process.env.CMS_BUILD_SKIP === '1';
+
+/**
+ * Validates one published story's `pub_doc` and maps it to PublishedStory.
+ * Shared by both the SQLite source and the snapshot-file source so the
+ * validation rules cannot drift.
+ */
+function toPublishedStory(row: { id: string; section: string; slug: string; published_at: string; pub_updated_at: string; pub_doc: string }): PublishedStory {
+  let document: unknown;
+  try {
+    document = JSON.parse(row.pub_doc);
+  } catch {
+    throw new Error(`CMS story ${row.id}: pub_doc is not valid JSON — republish the story and rebuild.`);
+  }
+  const doc = document as { title?: unknown; body?: unknown };
+  if (!doc.title || !doc.body) {
+    throw new Error(`CMS story ${row.id}: pub_doc is missing title or body — republish the story and rebuild.`);
+  }
+  return {
+    id: row.id,
+    section: row.section as 'observe' | 'show',
+    slug: row.slug,
+    publishedAt: row.published_at,
+    pubUpdatedAt: row.pub_updated_at,
+    document: document as PublishedStory['document'],
+  };
+}
 
 /**
  * Fetches published CMS stories from a local SQLite/D1 file.
@@ -69,29 +100,69 @@ export async function fetchPublishedCmsStories(dbPath: string | null = LOCAL_DB_
 
   const stories: PublishedStory[] = [];
   for (const row of rows) {
-    const id = row.id as string;
-    let document: unknown;
-    try {
-      document = JSON.parse(row.pub_doc as string);
-    } catch {
-      throw new Error(`CMS story ${id}: pub_doc is not valid JSON — republish the story and rebuild.`);
-    }
-    const doc = document as { title?: unknown; body?: unknown };
-    if (!doc.title || !doc.body) {
-      throw new Error(`CMS story ${id}: pub_doc is missing title or body — republish the story and rebuild.`);
-    }
+    stories.push(
+      toPublishedStory({
+        id: row.id as string,
+        section: row.section as string,
+        slug: row.slug as string,
+        published_at: row.published_at as string,
+        pub_updated_at: row.pub_updated_at as string,
+        pub_doc: row.pub_doc as string,
+      }),
+    );
+  }
+  return stories;
+}
 
-    stories.push({
-      id,
-      section: row.section as 'observe' | 'show',
-      slug: row.slug as string,
-      publishedAt: row.published_at as string,
-      pubUpdatedAt: row.pub_updated_at as string,
-      document: document as PublishedStory['document'],
-    });
+/**
+ * Fetches published CMS stories from the JSON snapshot file the deploy
+ * pipeline produced (GET /api/deploy/snapshot/). This is how remote/CI builds
+ * obtain production D1 content without a D1 binding in the build environment.
+ */
+export function fetchPublishedCmsStoriesFromSnapshotFile(path: string): PublishedStory[] {
+  if (CMS_BUILD_SKIP) {
+    console.warn('CMS_BUILD_SKIP=1 — building without CMS stories.');
+    return [];
   }
 
-  return stories;
+  let text: string;
+  try {
+    text = readFileSync(path, 'utf-8');
+  } catch (e) {
+    throw new Error(`Could not read CMS snapshot file (${path}): ${e instanceof Error ? e.message : 'read failed'}`);
+  }
+
+  let data: unknown;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(`CMS snapshot file ${path} is not valid JSON — regenerate the snapshot and rebuild.`);
+  }
+
+  const { revision, stories } = data as { revision?: unknown; stories?: unknown };
+  if (typeof revision !== 'number' || !Array.isArray(stories)) {
+    throw new Error(`CMS snapshot file ${path} is missing revision or stories — regenerate the snapshot and rebuild.`);
+  }
+  console.log(`Building from CMS snapshot revision ${revision} (${stories.length} published stories).`);
+
+  return stories.map((s) => {
+    const story = s as { id?: unknown; section?: unknown; slug?: unknown; publishedAt?: unknown; pubUpdatedAt?: unknown; document?: unknown };
+    if (typeof story.id !== 'string' || typeof story.slug !== 'string' || typeof story.publishedAt !== 'string' || typeof story.pubUpdatedAt !== 'string' || !story.document) {
+      throw new Error('CMS snapshot file contains a malformed published story — regenerate the snapshot and rebuild.');
+    }
+    const doc = story.document as { title?: unknown; body?: unknown };
+    if (!doc.title || !doc.body) {
+      throw new Error(`CMS snapshot story ${story.id} is missing title or body — republish the story and regenerate the snapshot.`);
+    }
+    return toPublishedStory({
+      id: story.id,
+      section: story.section as string,
+      slug: story.slug,
+      published_at: story.publishedAt,
+      pub_updated_at: story.pubUpdatedAt,
+      pub_doc: JSON.stringify(story.document),
+    });
+  });
 }
 
 let cachedArticles: Article[] | null = null;
@@ -105,7 +176,9 @@ let cachedArticles: Article[] | null = null;
 export async function buildArticleList(): Promise<Article[]> {
   if (cachedArticles) return cachedArticles;
   const legacy = legacyArticles(siteData);
-  const cmsStories = await fetchPublishedCmsStories();
+  const cmsStories = process.env.CMS_SNAPSHOT_FILE
+    ? fetchPublishedCmsStoriesFromSnapshotFile(process.env.CMS_SNAPSHOT_FILE)
+    : await fetchPublishedCmsStories();
   cachedArticles = assembleArticles(legacy, cmsStories);
   return cachedArticles;
 }
