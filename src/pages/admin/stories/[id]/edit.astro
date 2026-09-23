@@ -1,5 +1,6 @@
 ---
 import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import { EditorWrapper } from '../../../../components/editor/EditorWrapper.tsx';
 import { getEnv } from '../../../../lib/cms/runtime.ts';
 import { getStory, type D1Like, type Story } from '../../../../lib/cms/db.ts';
 import { isUuid } from '../../../../lib/cms/api.ts';
@@ -29,11 +30,11 @@ if (!story) Astro.response.status = loadError ? 500 : 404;
       </>
     ) : (
       <div data-story-id={story.id} data-draft-rev={story.draftRev}>
-        <editor-wrapper
+        <EditorWrapper
           client:only="react"
-          story-id={story.id}
-          initial-doc={JSON.stringify(story.draft)}
-          initial-rev={story.draftRev}
+          storyId={story.id}
+          initialDoc={JSON.stringify(story.draft)}
+          initialRev={story.draftRev}
         />
       </div>
     )

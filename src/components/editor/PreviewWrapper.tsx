@@ -3,11 +3,11 @@ import { type StoryDocument } from '../../../lib/cms/schema.ts';
 import { useState, useEffect } from 'react';
 
 interface PreviewWrapperProps {
-  'initial-doc': string;
-  'story-id': string;
+  initialDoc: string;
+  storyId: string;
 }
 
-export function PreviewWrapper({ 'initial-doc': initialDoc, 'story-id': storyId }: PreviewWrapperProps) {
+export function PreviewWrapper({ initialDoc, storyId }: PreviewWrapperProps) {
   const [doc, setDoc] = useState<StoryDocument>(JSON.parse(initialDoc));
 
   useEffect(() => {
