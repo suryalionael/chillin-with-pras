@@ -1,0 +1,102 @@
+{
+  "revision": 3,
+  "generatedAt": "2026-09-23T20:12:48.393Z",
+  "stories": [
+    {
+      "id": "cf5ca14e-2dff-4569-a207-55c19f6a8335",
+      "section": "observe",
+      "slug": "hello-from-the-api",
+      "publishedAt": "2026-09-20",
+      "pubUpdatedAt": "2026-09-20T23:32:16.302Z",
+      "document": {
+        "version": 1,
+        "title": "Hello from the API",
+        "subtitle": "",
+        "dateline": "",
+        "featuredImageId": null,
+        "body": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "First paragraph."
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "f0d1f187-2848-413b-b2ac-1939f89416f1",
+      "section": "observe",
+      "slug": "a-quiet-afternoon",
+      "publishedAt": "2026-09-23",
+      "pubUpdatedAt": "2026-09-23T20:12:40.827Z",
+      "document": {
+        "version": 1,
+        "title": "A Quiet Afternoon",
+        "subtitle": "Notes from a slow Sunday by the window",
+        "dateline": "",
+        "featuredImageId": null,
+        "body": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "The afternoon arrived without appointment, carried on a breeze that smelled of rain and cut grass."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "I sat by the open window with a book I was not really reading."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "/HeadingThe light"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "strong and slanted words sit "
+                }
+              ]
+            },
+            {
+              "type": "image",
+              "attrs": {
+                "imageId": "307a6799-14dc-4492-b51d-31a1662eb874",
+                "alt": "x",
+                "caption": "",
+                "decorative": false,
+                "size": "wide"
+              }
+            },
+            {
+              "type": "paragraph"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
