@@ -94,6 +94,16 @@
   border-bottom: 1px solid rgba(187, 51, 51, 0.3);
 }
 
+/* Publish/deployment note (published but not yet deployed) */
+.editor-publish-note {
+  padding: 0.85rem var(--gutter);
+  background: rgba(110, 90, 73, 0.1);
+  border-bottom: 1px solid var(--line);
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
 .editor-conflict p {
   margin-bottom: 0.75rem;
   font-family: var(--sans);

@@ -29,6 +29,9 @@ screenshots/
 playwright-report/
 test-results/
 
+# build-time published-content snapshot (CI)
+.cms/
+
 # any other local env files
 .env.*
 !.env.example
