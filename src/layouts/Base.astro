@@ -14,6 +14,7 @@ import '../styles/global.css';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import site from '../lib/site.mjs';
+import { u } from '../lib/url.mjs';
 
 const { title, description, ogImage, canonical, type = 'website' } = Astro.props;
 const fullTitle = title
@@ -34,8 +35,8 @@ const ogUrl = (ogImage ?? '/og.jpg').startsWith('/')
     <title>{fullTitle}</title>
     <meta name="description" content={desc} />
     <link rel="canonical" href={canonical} />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/svg+xml" href={u("/favicon.svg")} />
+    <link rel="apple-touch-icon" href={u("/apple-touch-icon.png")} />
 
     <meta property="og:type" content={type} />
     <meta property="og:site_name" content={site.site.title} />

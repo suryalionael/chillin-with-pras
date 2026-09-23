@@ -1,0 +1,85 @@
+name: deploy-pages
+
+# Builds the static Astro public site and deploys it to GitHub Pages.
+#
+# This is the TEMPORARY public hosting layer. The published CMS content comes
+# from the committed snapshot `.cms/snapshot.json` (written by
+# `npm run cms:publish-pages`), so Pages never needs D1/R2/Worker access and
+# never sees drafts.
+#
+# The Cloudflare deployment path stays intact:
+#   deploy-pages              -> GitHub Pages   (NOW)
+#   publish-deploy (repository_dispatch) -> Cloudflare Worker (LATER)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Build static site (published snapshot + Pages base)
+        run: |
+          if [ ! -f .cms/snapshot.json ]; then
+            echo "No published CMS snapshot (.cms/snapshot.json). Building legacy-only."
+            export CMS_BUILD_SKIP=1
+          else
+            export CMS_SNAPSHOT_FILE=.cms/snapshot.json
+          fi
+          export ASTRO_PAGES_BASE=/chillin-with-pras/
+          npm run build
+
+      - name: Copy exported CMS media into the build
+        run: |
+          if [ -d .cms/media ] && [ "$(ls -A .cms/media 2>/dev/null)" ]; then
+            mkdir -p dist/client/chillin-with-pras/cms-media
+            cp .cms/media/* dist/client/chillin-with-pras/cms-media/
+            echo "copied $(ls -1 .cms/media | wc -l | tr -d ' ') media file(s)"
+          else
+            echo "no CMS media to copy"
+          fi
+
+      - name: Verify static output (Pages-aware)
+        run: node scripts/verify-pages.mjs dist/client/chillin-with-pras
+
+      - name: Upload Pages artifact
+        uses: actions/configure-pages@v5
+
+      - name: Publish artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/client/chillin-with-pras
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

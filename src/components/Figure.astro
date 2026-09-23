@@ -5,6 +5,7 @@
 // portraits are capped to the viewport instead of being cropped.
 import Photo from './Photo.astro';
 import { ratio } from '../lib/images';
+import { cmsImageUrl } from '../lib/cms/pages-images.mjs';
 
 const { variant, files, tone = 'wide', hero = false, caption = '', isCms = false } = Astro.props;
 
@@ -31,7 +32,7 @@ const ar = (f) => isCms ? '1.7778' : ratio(f.file).toFixed(4); // default 16:9 f
       <div class="photo-frame">
         {isCms ? (
           <img
-            src={`/images/${files[0].imageId}`}
+            src={cmsImageUrl(files[0].imageId)}
             alt={files[0].decorative ? '' : files[0].alt}
             loading={hero ? 'eager' : 'lazy'}
             decoding="async"
@@ -57,7 +58,7 @@ const ar = (f) => isCms ? '1.7778' : ratio(f.file).toFixed(4); // default 16:9 f
         <div class="photo-frame" style={`--ar:${isCms ? '1.7778' : ar(f)}`}>
           {isCms ? (
             <img
-              src={`/images/${f.imageId}`}
+              src={cmsImageUrl(f.imageId)}
               alt={f.decorative ? '' : f.alt}
               loading="lazy"
               decoding="async"
@@ -78,7 +79,7 @@ const ar = (f) => isCms ? '1.7778' : ratio(f.file).toFixed(4); // default 16:9 f
         <div class="photo-frame">
           {isCms ? (
             <img
-              src={`/images/${files[0].imageId}`}
+              src={cmsImageUrl(files[0].imageId)}
               alt={files[0].decorative ? '' : files[0].alt}
               loading={hero ? 'eager' : 'lazy'}
               decoding="async"
@@ -99,7 +100,7 @@ const ar = (f) => isCms ? '1.7778' : ratio(f.file).toFixed(4); // default 16:9 f
             <div class="photo-frame" style={`--ar:${isCms ? '1.7778' : ar(f)}`}>
               {isCms ? (
                 <img
-                  src={`/images/${f.imageId}`}
+                  src={cmsImageUrl(f.imageId)}
                   alt={f.decorative ? '' : f.alt}
                   loading="lazy"
                   decoding="async"

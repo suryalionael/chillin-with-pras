@@ -2,6 +2,8 @@
 // The archive "Preview": each entry is a large photograph paired with its
 // title, metadata and opening lines. Sides alternate down the page.
 import Photo from './Photo.astro';
+import { cmsImageUrl } from '../lib/cms/pages-images.mjs';
+import { u } from '../lib/url.mjs';
 import { two } from '../lib/site.mjs';
 
 interface Props {
@@ -49,7 +51,7 @@ const label = section === 'observe' ? 'observation' : 'show & tell';
                 />
               ) : (
                 <img
-                  src={`/images/${img.imageId}`}
+                  src={cmsImageUrl(img.imageId)}
                   alt={img.decorative ? '' : img.alt || a.title}
                   loading={i < 2 ? 'eager' : 'lazy'}
                   sizes="(max-width: 900px) 92vw, 720px"
@@ -72,7 +74,7 @@ const label = section === 'observe' ? 'observation' : 'show & tell';
               )}
             </p>
             <h3 class="entry__title">
-              <a href={a.path}>{a.title}</a>
+              <a href={u(a.path)}>{a.title}</a>
             </h3>
             {ex && <p class="entry__excerpt">{ex}</p>}
             <p class="entry__cta" aria-hidden="true">

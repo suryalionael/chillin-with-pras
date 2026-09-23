@@ -2,6 +2,7 @@
 import Base from '../layouts/Base.astro';
 import EditorialTitle from '../components/EditorialTitle.astro';
 import { SECTIONS } from '../lib/site.mjs';
+import { u } from '../lib/url.mjs';
 ---
 
 <Base title="Loss for Words" canonical="https://www.chillinwithpras.com/404.html">
@@ -13,9 +14,9 @@ import { SECTIONS } from '../lib/site.mjs';
       doesn’t exist — or it wandered off somewhere.
     </p>
     <ul class="nf__links">
-      <li><a class="more" href="/">Back to the front page <span class="more__arrow" aria-hidden="true">→</span></a></li>
-      <li><a class="more" href={SECTIONS.observe.path}>To Observe &amp; Report <span class="more__arrow" aria-hidden="true">→</span></a></li>
-      <li><a class="more" href={SECTIONS.show.path}>To Show &amp; Tell <span class="more__arrow" aria-hidden="true">→</span></a></li>
+      <li><a class="more" href={u("/")}>Back to the front page <span class="more__arrow" aria-hidden="true">→</span></a></li>
+      <li><a class="more" href={u(SECTIONS.observe.path)}>To Observe &amp; Report <span class="more__arrow" aria-hidden="true">→</span></a></li>
+      <li><a class="more" href={u(SECTIONS.show.path)}>To Show &amp; Tell <span class="more__arrow" aria-hidden="true">→</span></a></li>
     </ul>
   </section>
 </Base>
