@@ -443,6 +443,70 @@ None of these are exercised by the dry run; the two jobs are hard-gated so a man
 
 ---
 
-_This document reflects commit `5f3fa94…` plus the two blocker fixes, the designed/implemented publish→deploy
-code path described in `docs/cms-publish-pipeline-design.md`, and the remote CI dry-run validation. Nothing
+## 20. GitHub Pages preview hosting (temporary public layer)
+
+Until Cloudflare production infrastructure is configured, the live public website is served from **GitHub Pages**.
+
+### Architecture
+
+```
+local CMS (editor, autosave, preview, publish)
+  │  publish → local D1 (published snapshot + media)
+  ▼
+npm run cms:publish-pages   (writes .cms/snapshot.json + .cms/media/ + media-manifest)
+  ▼
+commit .cms/ + article changes on main
+  ▼
+.github/workflows/deploy-pages.yml   (push to main / workflow_dispatch)
+  │  npm ci → test → typecheck → build (ASTRO_PAGES_BASE=/chillin-with-pras/, CMS_SNAPSHOT_FILE) → verify → deploy
+  ▼
+GitHub Pages  →  https://suryalionael.github.io/chillin-with-pras/
+```
+
+- Pages builds **only** from the committed published snapshot (`.cms/snapshot.json`) — it never touches D1,
+  R2, Worker APIs, admin endpoints, or any draft.
+- Base path: `ASTRO_PAGES_BASE=/chillin-with-pras/` is set **only** in the Pages workflow. Local/Cloudflare
+  builds keep the root layout (`/`), so the Cloudflare migration path stays byte-identical.
+- CMS images: `src/lib/cms/pages-images.mjs` resolves `imageId` to `{base}cms-media/{id}.{ext}` from the
+  committed `media-manifest.json` when building for Pages; root/Cloudflare builds always use the Worker
+  route `/images/{id}`. The `Article` model and snapshots are unchanged.
+- Legacy archive (35 articles), routes, archives, navigation, images, fonts, favicon all work under the
+  subpath via the shared `url.mjs` base prefixer.
+
+### How to write an article (preview phase)
+
+```sh
+npm run db:migrate:local        # once
+cp .dev.vars.example .dev.vars  # once (DEV_ADMIN_BYPASS=true)
+astro dev --background           # http://localhost:4321/admin/
+# write a story, add images, save (autosave), preview, Publish
+# (a browser test for the whole flow: node scripts/write-article.mjs)
+node scripts/publish-pages.mjs   # writes .cms/snapshot.json + media + manifest
+git add .cms/ <changed files>
+git commit -m "content: publish ..."
+git push origin main             # deploy-pages workflow rebuilds Pages
+# verify at https://suryalionael.github.io/chillin-with-pras/
+```
+
+### CONFIRMED locally
+
+- `npm test` / `npm run typecheck` / root `npm run build` / `scripts/qa.mjs` / `scripts/shots.mjs` /
+  `scripts/editor-regression.mjs` all pass.
+- Full writing flow exercised through the real editor (create → title/subtitle → paragraphs → slash-menu
+  heading → bold → image via picker → preview → publish).
+- Pages build (`ASTRO_PAGES_BASE=/chillin-with-pras/` + `CMS_SNAPSHOT_FILE=.cms/snapshot.json`) passes
+  `scripts/verify-pages.mjs`; base-routed homepage, CMS article, archives, legacy routes, and `cms-media`
+  all render.
+
+### NOT YET CONFIRMED (needs the workflow run + live deployment)
+
+- The pushed `deploy-pages.yml` run on GitHub Actions (dry runs to date used the separate `publish-deploy`
+  dry-run job).
+- GitHub Pages serving `/chillin-with-pras/` publicly (no DNS/credentials needed, but requires the worker
+  run + Pages site enabled).
+- Real `repository_dispatch` publish→deploy (Cloudflare production).
+
+---
+
+_This document reflects commit `5539497…` plus the Pages-preview implementation described in §20. Nothing
 production-side was created, deleted, or configured._
