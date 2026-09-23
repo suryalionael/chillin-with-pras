@@ -3,11 +3,11 @@
 // must fail the build rather than silently drop content.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, readFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { fetchPublishedCmsStories } from './build-content.ts';
+import { fetchPublishedCmsStories, fetchPublishedCmsStoriesFromSnapshotFile } from './build-content.ts';
 import { createTestDb } from './test-db.ts';
 import { createStory, publishStory, saveDraft, type Deps } from './db.ts';
 import { emptyStoryDocument } from './schema.ts';
@@ -128,6 +128,98 @@ test('build-content: e2e — publishing "A Quiet Afternoon" lands it as the 31st
     const observeOrdered = all.filter((a) => a.section === 'observe').sort((a, b) => a.order - b.order);
     assert.equal(observeOrdered[observeOrdered.length - 1]!.order, 31);
     assert.ok(article.blocks.some((b) => b.type === 'p' && (b as { text: string }).text === 'The afternoon was quiet.'));
+    assert.equal(new Set(all.map((a) => a.path)).size, all.length);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+// The snapshot-file build source mirrors what the deploy pipeline (CI) passes
+// to `astro build` (CMS_SNAPSHOT_FILE). Same PublishedStory validation, from a
+// JSON file instead of the local D1 SQLite.
+
+const snapshotJson = (revision: number, stories: unknown[]) => JSON.stringify({ revision, generatedAt: '2026-09-20T00:00:00.000Z', stories });
+
+const storyJson = (id: string, slug: string, title: string) => ({
+  id,
+  section: 'observe',
+  slug,
+  publishedAt: '2026-09-21',
+  pubUpdatedAt: '2026-09-21T00:00:00.000Z',
+  document: { version: 1, title, subtitle: '', dateline: '', featuredImageId: null, body: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Snapshot body.' }] }] } },
+});
+
+function snapshotFile() {
+  const dir = mkdtempSync(join(tmpdir(), 'cms-snapshot-'));
+  const path = join(dir, 'snapshot.json');
+  return { dir, path };
+}
+
+test('build-content: snapshot file maps published stories to the PublishedStory model', () => {
+  const { dir, path } = snapshotFile();
+  try {
+    writeFileSync(path, snapshotJson(7, [storyJson('00000000-0000-4000-8000-000000000001', 'from-snapshot', 'From Snapshot')]));
+    const stories = fetchPublishedCmsStoriesFromSnapshotFile(path);
+    assert.equal(stories.length, 1);
+    assert.deepEqual([stories[0]!.slug, stories[0]!.document.title], ['from-snapshot', 'From Snapshot']);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('build-content: snapshot file with a missing file fails loudly', () => {
+  assert.throws(() => fetchPublishedCmsStoriesFromSnapshotFile(join(tmpdir(), 'nope', 'x.json')), /Could not read CMS snapshot file/);
+});
+
+test('build-content: snapshot file with invalid JSON fails loudly', () => {
+  const { dir, path } = snapshotFile();
+  try {
+    writeFileSync(path, 'not json');
+    assert.throws(() => fetchPublishedCmsStoriesFromSnapshotFile(path), /not valid JSON/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('build-content: snapshot file missing revision or stories fails loudly', () => {
+  const { dir, path } = snapshotFile();
+  try {
+    writeFileSync(path, JSON.stringify({ generatedAt: 'now' }));
+    assert.throws(() => fetchPublishedCmsStoriesFromSnapshotFile(path), /missing revision or stories/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('build-content: snapshot file with a malformed story fails loudly', () => {
+  const { dir, path } = snapshotFile();
+  try {
+    writeFileSync(path, snapshotJson(1, [{ id: '00000000-0000-4000-8000-000000000001' }]));
+    assert.throws(() => fetchPublishedCmsStoriesFromSnapshotFile(path), /malformed published story/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('build-content: snapshot file story missing title or body fails loudly', () => {
+  const { dir, path } = snapshotFile();
+  try {
+    writeFileSync(path, snapshotJson(1, [{ ...storyJson('00000000-0000-4000-8000-000000000001', 'a', 'A'), document: {} }]));
+    assert.throws(() => fetchPublishedCmsStoriesFromSnapshotFile(path), /missing title or body/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('build-content: snapshot file merges with legacy articles and builds routes', () => {
+  const site = JSON.parse(readFileSync(fileURLToPath(new URL('../../data/site.json', import.meta.url)), 'utf8')) as RawSite;
+  const { dir, path } = snapshotFile();
+  try {
+    writeFileSync(path, snapshotJson(7, [storyJson('00000000-0000-4000-8000-000000000001', 'from-snapshot', 'From Snapshot')]));
+    const stories = fetchPublishedCmsStoriesFromSnapshotFile(path);
+    const all = assembleArticles(legacyArticles(site), stories);
+    const article = all.find((a) => a.slug === 'from-snapshot');
+    assert.ok(article, 'snapshot story must appear in the public article list');
+    assert.deepEqual([article!.source, article!.section, article!.path], ['cms', 'observe', '/to-observe-and-report/from-snapshot/']);
     assert.equal(new Set(all.map((a) => a.path)).size, all.length);
   } finally {
     rmSync(dir, { recursive: true, force: true });
