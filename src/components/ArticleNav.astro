@@ -21,8 +21,8 @@ function navImage(a) {
 
 const nextMedia = navImage(next) ?? { kind: 'cover' };
 const target = next
-  ? { href: next.path, title: next.title, label: 'Next entry', date: next.dateline, cta: 'Read the next entry' }
-  : { href: sec.path, title: sec.title, label: 'That was the last entry', date: '', cta: 'Back to all entries' };
+  ? { href: u(next.path), title: next.title, label: 'Next entry', date: next.dateline, cta: 'Read the next entry' }
+  : { href: u(sec.path), title: sec.title, label: 'That was the last entry', date: '', cta: 'Back to all entries' };
 ---
 
 <nav class="container article-nav" aria-label="More entries">
