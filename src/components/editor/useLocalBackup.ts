@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import type { StoryDocument } from '../../lib/cms/schema.ts';
 
 interface BackupData {
@@ -27,6 +27,11 @@ export function useLocalBackup({
   onRestore,
 }: UseLocalBackupOptions) {
   const backupKey = `${STORAGE_KEY}-${storyId}`;
+  // Keep the latest callback in a ref so restoring on mount can never loop:
+  // onRestore is a fresh function each render, and depending on it in the
+  // effect would re-run the restore forever (setState → new onRestore → …).
+  const onRestoreRef = useRef(onRestore);
+  onRestoreRef.current = onRestore;
 
   const saveBackup = useCallback(() => {
     try {
@@ -67,12 +72,15 @@ export function useLocalBackup({
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [saveBackup]);
 
+  // Restore once, on mount only. onRestore is read through the ref.
   useEffect(() => {
     const backup = loadBackup();
     if (backup) {
-      onRestore(backup);
+      onRestoreRef.current(backup);
     }
-  }, [loadBackup, onRestore]);
+    // run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storyId]);
 
   return { saveBackup, loadBackup, clearBackup };
 }
