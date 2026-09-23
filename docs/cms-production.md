@@ -411,6 +411,38 @@ Code canonicalizes to `www`; confirm a 301 and matching Access host rules at dep
 
 ---
 
-_This document reflects commit `5f3fa94…` plus the two blocker fixes and the designed/implemented publish→deploy
-code path described in `docs/cms-publish-pipeline-design.md`. Nothing production-side was created, deleted, or
-configured._
+## 19. Remote GitHub Actions CI validation (workflow_dispatch dry run)
+
+The publish-deploy workflow supports a safe **dry-run** entry point (`workflow_dispatch`) that validates the
+static builder on a fresh Linux runner with **no Cloudflare deployment**. It uses the committed fixture
+`.cms/fixtures/ci-snapshot.json` (`CMS_SNAPSHOT_FILE`), runs the full pipeline, and uploads `dist/` as
+`cms-publish-ci-dry-run`.
+
+### CONFIRMED (remote CI dry run)
+
+- Remote GitHub checkout + `npm ci` + Node 22 works.
+- `npm test` (132 tests) passes on Linux.
+- `npm run typecheck` (wrangler types + astro check) passes on Linux.
+- `npm run build` succeeds using the **snapshot-file** build mode against the CI fixture.
+- CMS stories generate static routes under `/to-observe-and-report/` and `/to-show-and-tell/`; section
+  archives and homepage picks include them; legacy 35 articles and routes remain.
+- `node scripts/qa.mjs` passes (public pages, CMS article page, admin denial, no secret leakage).
+- `node scripts/shots.mjs` produces screenshots.
+- The build emits a `dist/` artifact and prints
+  `CI DRY RUN COMPLETE — NO CLOUDFLARE DEPLOYMENT PERFORMED`.
+
+### NOT YET CONFIRMED (requires production infrastructure)
+
+- Production D1 snapshot endpoint (`/api/deploy/snapshot/`).
+- Worker pipeline authentication (real `CMS_PIPELINE_TOKEN`).
+- Real publish → `repository_dispatch` trigger.
+- Cloudflare `wrangler deploy`.
+- Production deployment status callback (`/api/deploy/status/`) and rollback.
+
+None of these are exercised by the dry run; the two jobs are hard-gated so a manual dispatch can never deploy.
+
+---
+
+_This document reflects commit `5f3fa94…` plus the two blocker fixes, the designed/implemented publish→deploy
+code path described in `docs/cms-publish-pipeline-design.md`, and the remote CI dry-run validation. Nothing
+production-side was created, deleted, or configured._

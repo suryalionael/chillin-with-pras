@@ -539,6 +539,34 @@ Selected because:
 
 ---
 
+### Remote CI validation (workflow_dispatch dry run)
+
+The production `repository_dispatch` path cannot be exercised yet (no production D1/R2/Access/secrets).
+To validate the **builder alone** in a real GitHub Actions Linux environment without touching Cloudflare, the
+workflow also accepts `workflow_dispatch` → a dedicated `ci-dry-run` job:
+
+- **Workflow name:** `publish-deploy`
+- **Dry-run trigger:** `workflow_dispatch` (manual), input `ci_only=true` (default). The production
+  `build-and-deploy` job only runs on `repository_dispatch`, so a manual dispatch can never deploy.
+- **Runner:** `ubuntu-latest` (fresh runner, no local Mac state, no `.wrangler`, no `.dev.vars`).
+- **Snapshot fixture:** `.cms/fixtures/ci-snapshot.json` — a committed, deterministic test snapshot
+  (2 stories, one per section, realistic blocks). The build runs with
+  `CMS_SNAPSHOT_FILE=.cms/fixtures/ci-snapshot.json`, proving the snapshot-file build mode on a clean runner.
+  It contains no private CMS content and no secrets.
+- **Commands executed:** `npm ci` → `npm test` → `npm run typecheck` →
+  `npm run build` (fixture) → `node scripts/verify-dist.mjs` → install Playwright chromium →
+  `node scripts/qa.mjs` + `node scripts/shots.mjs` against an `astro preview` server.
+- **Artifact name:** `cms-publish-ci-dry-run` (uploads `dist/`).
+- **What is proven:** remote checkout/install works; tests + typecheck + Astro production build pass on Linux;
+  the CMS snapshot-file build mode works remotely; CMS routes, archives, homepage picks, inline formatting and
+  legacy routes are generated; QA and screenshots pass; `dist/` contains no draft data and no secrets.
+- **What remains unverified** (needs production infrastructure): the live D1 snapshot endpoint, Worker pipeline
+  authentication, real publish→trigger, Cloudflare deployment, status callbacks, and rollback. These are NOT
+  exercised in the dry run — the job prints `CI DRY RUN COMPLETE — NO CLOUDFLARE DEPLOYMENT PERFORMED`.
+
+The dry run is safe to run on a public repository: it never reads or writes production CMS data, never calls
+Cloudflare, and never requires production secrets.
+
 ### Blockers encountered
 
 None that stop the code-side implementation. All authorization needed for the local/CI code path is injectable

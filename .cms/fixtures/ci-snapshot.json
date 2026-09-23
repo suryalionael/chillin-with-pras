@@ -1,0 +1,99 @@
+{
+  "revision": 1,
+  "generatedAt": "2026-01-15T12:00:00.000Z",
+  "stories": [
+    {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "section": "observe",
+      "slug": "hello-from-the-api",
+      "publishedAt": "2026-01-10",
+      "pubUpdatedAt": "2026-01-10T09:00:00.000Z",
+      "document": {
+        "version": 1,
+        "title": "Hello from the API",
+        "subtitle": "A CMS-published story built from the CI snapshot fixture",
+        "dateline": "January 10, 2026",
+        "featuredImageId": null,
+        "body": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                { "type": "text", "text": "This story exists to prove that a " },
+                { "type": "text", "text": "published CMS snapshot", "marks": [{ "type": "bold" }] },
+                { "type": "text", "text": " reaches the Astro static build on a fresh GitHub Actions runner." }
+              ]
+            },
+            { "type": "heading", "attrs": { "level": 2 }, "content": [{ "type": "text", "text": "Why it matters" }] },
+            {
+              "type": "paragraph",
+              "content": [
+                { "type": "text", "text": "Remote builders have no local D1 file, so the build must read " },
+                { "type": "text", "text": "published content", "marks": [{ "type": "italic" }] },
+                { "type": "text", "text": " from the pipeline snapshot instead." }
+              ]
+            },
+            {
+              "type": "bulletList",
+              "content": [
+                { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "only published (pub_doc) content ships" }] }] },
+                { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "legacy articles stay untouched" }] }] },
+                { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "no Cloudflare credentials are needed for the dry run" }] }] }
+              ]
+            },
+            {
+              "type": "blockquote",
+              "content": [
+                { "type": "paragraph", "content": [{ "type": "text", "text": "A quiet quote, faithfully rendered from the snapshot." }] }
+              ]
+            },
+            { "type": "horizontalRule" },
+            {
+              "type": "paragraph",
+              "content": [
+                { "type": "text", "text": "End of the fixture story. A divider and an embed follow in the Show & Tell piece." }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000002",
+      "section": "show",
+      "slug": "a-snapshot-for-show-and-tell",
+      "publishedAt": "2026-01-12",
+      "pubUpdatedAt": "2026-01-12T14:00:00.000Z",
+      "document": {
+        "version": 1,
+        "title": "A Snapshot for Show and Tell",
+        "subtitle": "Exercises the show section routing path",
+        "dateline": "January 12, 2026",
+        "featuredImageId": null,
+        "body": {
+          "type": "doc",
+          "content": [
+            { "type": "heading", "attrs": { "level": 3 }, "content": [{ "type": "text", "text": "Subheading" }] },
+            {
+              "type": "paragraph",
+              "content": [
+                { "type": "text", "text": "A show-section story with an " },
+                { "type": "text", "text": "embed", "marks": [{ "type": "bold" }] },
+                { "type": "text", "text": " placeholder below. Embeds stay as placeholders in the public renderer." }
+              ]
+            },
+            { "type": "embed", "attrs": { "url": "https://vimeo.com/123456789" } },
+            {
+              "type": "orderedList",
+              "content": [
+                { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "First" }] }] },
+                { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Second" }] }] }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
