@@ -33,6 +33,11 @@ test-results/
 .cms/*
 !.cms/fixtures/
 !.cms/fixtures/**
+# the committed Pages snapshot + exported media (written by npm run cms:publish-pages)
+!.cms/snapshot.json
+!.cms/media-manifest.json
+!.cms/media/
+!.cms/media/**
 
 # any other local env files
 .env.*
