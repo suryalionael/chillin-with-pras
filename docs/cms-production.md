@@ -188,53 +188,49 @@ or `CMS_BUILD_SKIP=1` builds the legacy-only site deliberately). This prevents �
 
 ---
 
-## 10. Publish → deploy flow (needs the deploy hook — the missing piece)
+## 10. Publish → deploy flow (implemented code; production config pending)
 
-Current state: publish copies `draft_doc` → `pub_doc` and sets `status='published'`
-(`src/lib/cms/db.ts` `publishStory()`). The API returns `build: { triggered: false }` (`publish.ts`), and the editor’s Publish
-button shows success **without triggering any deployment**. A new static deploy is therefore only produced when someone
-runs `npm run build` + deploys manually.
-
-Required flow (chosen approach below):
+Implemented locally/code:
 
 ```
 Publish (admin Worker)
-   → D1 INSERT/UPDATE pub_doc  (already works)
-   → fire deploy trigger       (MISSING)
-   → Astro build reads pub_doc
-   → new static assets
-   → deploy new site
+   → publishStory() commits pub_doc            [unchanged atomic UPDATE]
+   → nextRevision() allocates monotonic rev    [UPDATE … RETURNING — atomic]
+   → requestDeployment() inserts a durable `deploy_requested` row
+   → githubDispatchTrigger() fires repository_dispatch (best-effort)
+   → 200 { story, build: { triggered, revision, status, error? } }
 ```
 
-### Deployment options considered
+- Publishing the CMS snapshot and deploying the static site are **separate events**. A trigger failure never undoes
+  the publish (D1 is authoritative); it is surfaced as `build.triggered=false` and the deployment row stays
+  `deploy_requested`.
+- The GitHub Actions workflow (`publish-deploy.yml`) fetches the published snapshot, builds with
+  `CMS_SNAPSHOT_FILE`, deploys via wrangler, and reports `building`/`deployed`/`failed` back to
+  `POST /api/deploy/status/`.
+- The editor shows a deployment note after publish; the dashboard lists deployment rows with current/behind state.
 
-1. **Workers Builds (Cloudflare):** watch the git repo, auto-build+dply on push. Fine for one person, but a publish needs an
-   extra push, and build-time D1 access still has to be solved.
-2. **GitHub Action on tag/push → `npm run build` → deploy:** simple, but same build-time-D1 question.
-3. **Workers Builds/API-triggered build:** a publish can POST to the platform’s deploy-hook endpoint. Smallest reliable
-   mechanism: after `publishStory()` succeeds, `await fetch(DEPLOY_HOOK_URL)` in the Worker; surface the result to the UI.
+Production configuration still required (not created):
 
-**Recommended (smallest reliable, no queue):** server-side deploy hook fired inside `POST /:id/publish/` after the D1 write
-commits, plus `DEPLOY_HOOK_URL` secret. No background job system; the hook call is awaited and its success/failure returned to the UI (§14).
+- `GITHUB_REPO` var + `CMS_DEPLOY_TRIGGER_TOKEN` secret (Worker) so publish can dispatch.
+- `CMS_SNAPSHOT_URL`, `CMS_STATUS_URL` vars + `CMS_PIPELINE_TOKEN` secret (GitHub Actions).
+- `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` (GitHub Actions) for `wrangler deploy`.
+- Confirm the `wrangler deploy --config dist/server/wrangler.json` path on the first rollout.
 
 ---
 
-## 11. Build-time CMS content — the D1/build boundary problem
+## 11. Build-time CMS content — D1/build boundary (implemented code; production config pending)
 
-The biggest gap to close. Today `build-content.ts` reads a **local SQLite file** path `.wrangler/state/**/d1/*/*.sqlite`.
-That exists on a developer laptop that ran `wrangler dev`, but **not in CI or a clean remote build**, so a production build
-cannot currently read production D1.
+Today `build-content.ts` supports two sources:
 
-Options to make remote builds deterministic (smallest first):
+1. **Local dev:** reads `.wrangler/state/**/d1/*/*.sqlite` via `@libsql/client` (unchanged default).
+2. **CI/remote:** reads a published-content snapshot file pointed at by `CMS_SNAPSHOT_FILE`. The snapshot is produced
+   by `GET /api/deploy/snapshot/` (Bearer `CMS_PIPELINE_TOKEN`), which serializes exactly what `listPublishedStories()`
+   returns plus the current monotonic `revision`, so D1 stays the source of truth and validation cannot drift.
 
-1. **Remote export step in CI:** before `astro build`, run
-   `npx wrangler d1 export <db> --remote --table=stories` (or a `SELECT` JSON export via `wrangler d1 execute --remote`) into a
-   file that `build-content.ts` reads, then build. Add `CMS_DB=<path>`/`CMS_SNAPSHOT_JSON=` env to point at it.
-2. **API digest endpoint:** a Worker route that returns a compact JSON of published stories; the builder curls it to a file.
-3. **Committed snapshot:** publish workflow writes `pub_doc` rows to a repo file (complex, stale-risk).
+Failure policy is shared and loud: missing/unreadable source or malformed/`missing title or body` story fails the
+build (no deployment). `CMS_BUILD_SKIP=1` builds legacy-only deliberately.
 
-Recommendation: **option 1/2 hybrid** — defined `PUBLISHED_STORIES_URL` (an authenticated Worker endpoint) or a wrangler D1
-export before build. Until this exists, keep the loud-failure guarantee and require an explicit source.
+Deferred production config: the snapshot endpoint's `CMS_PIPELINE_TOKEN` secret and the workflow secrets above.
 
 ---
 
@@ -291,7 +287,7 @@ No analytics/comments/newsletter/multi-user — nothing extra to pay for.
 cp .dev.vars.example .dev.vars        # DEV_ADMIN_BYPASS=true  (git-ignored)
 npm run db:migrate:local              # creates local D1 tables
 astro dev --background                # http://localhost:4321/admin/  (loopback = admin in dev)
-npm test                              # 111 unit tests
+npm test                              # 132 unit tests
 npm run typecheck                     # wrangler types + astro check
 npm run build                         # static build (reads local D1)
 npm run preview                       # verify dist client (admin Admin blocked — no prod Access)
@@ -379,13 +375,18 @@ Regression coverage:
 
 ### MEDIUM — publish does not trigger deployment, and the UI cannot tell
 
-`publishStory()` always returns `build: { triggered: false }`; the editor Publish button reports success with no indication
-that the public site was not rebuilt. §10/§14 plan addresses this with a deploy hook + surfaced status. Until then the CMS and
-the static site are manually coupled. **Unchanged in this milestone.**
+**Updated:** the publish endpoint now records a durable deployment request (monotonic revision) and fires a GitHub
+`repository_dispatch` best-effort; the editor shows a deployment note and the dashboard lists deployment state. What is
+still **not configured in production** (code exists): the Worker secrets/vars the trigger needs (`GITHUB_REPO`,
+`CMS_DEPLOY_TRIGGER_TOKEN`, `CMS_PIPELINE_TOKEN`) and the GitHub Actions secrets, so in a fresh deployment publish will
+report `build.triggered=false` until those are set. See §10/§11 and `docs/cms-publish-pipeline-design.md`.
 
 ### MEDIUM — remote build cannot read production D1 yet
 
-See §11. The builder reads a local SQLite state file only. **Unchanged in this milestone.**
+**Updated:** `build-content.ts` now supports `CMS_SNAPSHOT_FILE` (a published-content snapshot from
+`GET /api/deploy/snapshot/`), and the GitHub workflow uses it. Still required in production: `CMS_PIPELINE_TOKEN`
+(Worker secret + Actions secret), `CMS_SNAPSHOT_URL`/`CMS_STATUS_URL` vars, and Cloudflare deploy secrets. The local
+SQLite source remains the developer default. See §10/§11.
 
 ### LOW — `www` vs apex canonical unverified
 
@@ -397,12 +398,19 @@ Code canonicalizes to `www`; confirm a 301 and matching Access host rules at dep
 
 1. ✅ ~~Fix editor/preview mounting~~ — done (+ `scripts/editor-regression.mjs`).
 2. ✅ ~~Fix image upload dimensions + orphan cleanup~~ — done (+ endpoint tests through the real schema).
-3. Create D1 + R2, wire real IDs/bucket; apply remote migration; verify.
-4. Configure Cloudflare Access + audience + team domain; verify `/admin` end-to-end in production.
-5. Solve build-time D1 read for remote builds (§11) and wire the publish deploy hook (§10).
-6. Re-run full test suite, `npm run build`, `scripts/qa.mjs`, screenshots; then a production smoke checklist (§15).
+3. ✅ ~~Design + implement publish→deploy code path~~ — done (see `docs/cms-publish-pipeline-design.md`).
+    Includes: `deployments`/`deploy_meta` migration, `src/lib/cms/deploy.ts`, `/api/deploy/snapshot/`,
+    `/api/deploy/status/`, `CMS_SNAPSHOT_FILE` build mode, publish wiring, dashboard/editor status,
+    `.github/workflows/publish-deploy.yml`, and deployment-state tests.
+4. **Create production resources (NOT done — next milestone):** D1 + R2 with real IDs, apply `0002` remotely,
+   Cloudflare Access config, Worker secrets (`CMS_PIPELINE_TOKEN`, `CMS_DEPLOY_TRIGGER_TOKEN`, `GITHUB_REPO`),
+   GitHub Actions secrets (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `CMS_PIPELINE_TOKEN`, `CMS_SNAPSHOT_URL`,
+   `CMS_STATUS_URL`), and the first manual `wrangler deploy`.
+5. Re-run full test suite, `npm run build`, `scripts/qa.mjs`, screenshots, editor regression; then the production
+   smoke checklist (§15).
 
 ---
 
-_This document reflects the audited state of commit `6a53a9fda5db207f1e9308f4a9a5f320cf927605` plus the two blocker fixes
-described in §17. Nothing production-side was created, deleted, or configured._
+_This document reflects commit `5f3fa94…` plus the two blocker fixes and the designed/implemented publish→deploy
+code path described in `docs/cms-publish-pipeline-design.md`. Nothing production-side was created, deleted, or
+configured._
