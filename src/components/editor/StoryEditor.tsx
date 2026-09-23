@@ -94,8 +94,11 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
             editor: this.editor,
             allow: ({ state, range }) => {
               const $from = state.doc.resolve(range.from);
-              const nodeType = $from.parent.type;
-              return nodeType.name === 'paragraph' && $from.parent.textContent.length === 0 && $from.parentOffset === 0;
+              const parent = $from.parent;
+              // the trigger must sit at the very start of its paragraph (no
+              // leading text), so "/" opens the menu at the start of a block
+              const textBefore = parent.textBetween(0, $from.parentOffset, undefined, '\ufffc');
+              return parent.type.name === 'paragraph' && textBefore.replace(/\//g, '').trim() === '';
             },
             items: () => SLASH_ITEMS,
             render: () => {
@@ -133,10 +136,21 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
       },
     },
     onUpdate: ({ editor }) => {
-      const newDoc = editor.getJSON();
-      setDoc((prev) => ({ ...prev, body: newDoc }));
+      onEditorUpdate(editor.getJSON());
     },
   });
+
+  // Tiptap autofocus issues an initial transaction during editor creation, which
+  // fires onUpdate before React has mounted and triggers the "state update on an
+  // unmounted component" warning. Skip updates until after mount.
+  const mountedRef = useRef(false);
+  const onEditorUpdate = useCallback((newDoc) => {
+    if (!mountedRef.current) return;
+    setDoc((prev) => ({ ...prev, body: newDoc }));
+  }, []);
+  useEffect(() => {
+    mountedRef.current = true;
+  }, []);
 
   const { saveWithDebounce, cancelSave } = useAutosave({
     storyId,
@@ -293,9 +307,13 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
 
   const handleImageSelect = useCallback((image: { id: string; filename: string }) => {
     if (!editor || !pendingImageRange) return;
+    // Default alt to the filename stem so inserted images are publishable and
+    // accessible right away; the author can still replace it later (caption and
+    // alt remain editable fields on the image node).
+    const alt = (image.filename || '').replace(/\.[a-z0-9]+$/i, '').trim() || image.id;
     editor.chain().focus().deleteRange(pendingImageRange).setImage({
       imageId: image.id,
-      alt: '',
+      alt,
       caption: '',
       decorative: false,
       size: 'wide',
