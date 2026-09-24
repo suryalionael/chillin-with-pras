@@ -377,16 +377,19 @@ async function slugExists(db: D1Like, slug: string): Promise<boolean> {
   return (await db.prepare('SELECT 1 AS x FROM stories WHERE slug = ?').bind(slug).first()) !== null;
 }
 
-// ---------- delete (drafts only) ----------
+// ---------- delete ----------
 
-export type DeleteResult = { ok: true } | { ok: false; reason: 'not_found' | 'published' };
+export type DeleteResult = { ok: true } | { ok: false; reason: 'not_found' };
 
-/** Deletes a never-published draft. A published story must be unpublished first (a later phase). */
+/**
+ * Deletes a story and its published snapshot. Deleting removes it from the CMS
+ * and (after a rebuild) from the public site; the row and its pub_doc are gone
+ * and cannot be restored. Used by the dashboard Delete action.
+ */
 export async function deleteDraft(db: D1Like, id: string): Promise<DeleteResult> {
-  const r = await db.prepare(`DELETE FROM stories WHERE id = ? AND status = 'draft'`).bind(id).run();
+  const r = await db.prepare(`DELETE FROM stories WHERE id = ?`).bind(id).run();
   if ((r.meta.changes ?? 0) === 1) return { ok: true };
-  const row = await db.prepare('SELECT status FROM stories WHERE id = ?').bind(id).first<{ status: string }>();
-  return { ok: false, reason: row ? 'published' : 'not_found' };
+  return { ok: false, reason: 'not_found' };
 }
 
 // ---------- images (rows only; upload lives in a later phase) ----------
@@ -398,7 +401,7 @@ export interface ImageRecord {
   width: number;
   height: number;
   bytes: number;
-  mime: 'image/jpeg' | 'image/png' | 'image/webp';
+  mime: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif';
   sha256: string;
   filename: string;
 }

@@ -8,7 +8,7 @@ import { readImageInfo } from '../../../../lib/cms/image-info.ts';
 export const prerender = false;
 
 const MAX_UPLOAD_BYTES = 20_000_000; // 20MB
-const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] as const;
 
 async function sha256Hex(buffer: ArrayBuffer): Promise<string> {
   const hash = await crypto.subtle.digest('SHA-256', buffer);
@@ -23,6 +23,8 @@ function getExtension(mime: string): string {
       return 'png';
     case 'image/webp':
       return 'webp';
+    case 'image/gif':
+      return 'gif';
     default:
       return 'bin';
   }
@@ -63,8 +65,8 @@ export async function handleImageUpload(call: { db: D1Like; media: MediaLike; re
   }
 
   const declaredMime = file.type;
-  if (!ALLOWED_MIMES.includes(declaredMime as 'image/jpeg' | 'image/png' | 'image/webp')) {
-    return jsonError(415, 'unsupported_media_type', 'Supported types: JPEG, PNG, WebP.');
+  if (!ALLOWED_MIMES.includes(declaredMime as (typeof ALLOWED_MIMES)[number])) {
+    return jsonError(415, 'unsupported_media_type', 'Supported types: JPEG, PNG, WebP, GIF.');
   }
 
   const bytes = await file.arrayBuffer();

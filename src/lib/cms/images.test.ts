@@ -62,8 +62,8 @@ test('sha256 index prevents duplicate storage keys', async () => {
   assert.ok(id2);
 });
 
-test('insertImage rejects invalid mime types at database level', async () => {
-  const img = createTestImage({ mime: 'image/gif' as 'image/jpeg' | 'image/png' | 'image/webp' });
+test('insertImage rejects unsupported mime types at database level', async () => {
+  const img = createTestImage({ mime: 'image/tiff' as 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' });
   try {
     await insertImage(db, img);
     assert.fail('Should have thrown');
@@ -71,6 +71,14 @@ test('insertImage rejects invalid mime types at database level', async () => {
     assert.ok(e instanceof Error);
     assert.match(e.message, /CHECK constraint failed/i);
   }
+});
+
+test('insertImage accepts GIF mime', async () => {
+  const img = createTestImage({ mime: 'image/gif' });
+  const id = await insertImage(db, img);
+  assert.ok(id);
+  const row = await db.prepare('SELECT mime FROM images WHERE id = ?').bind(id).first<{ mime: string }>();
+  assert.equal(row?.mime, 'image/gif');
 });
 
 test('insertImage rejects zero or negative dimensions', async () => {

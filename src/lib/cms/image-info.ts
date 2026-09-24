@@ -1,4 +1,4 @@
-// Minimal, dependency-free image header reader (JPEG/PNG/WebP).
+// Minimal, dependency-free image header reader (JPEG/PNG/WebP/GIF).
 //
 // The upload endpoint runs inside the Cloudflare Worker (workerd), where the
 // native `sharp` binary cannot be loaded; the project's `sharp` build-time
@@ -10,8 +10,8 @@
 export interface ImageInfo {
   width: number;
   height: number;
-  /** 'image/jpeg' | 'image/png' | 'image/webp' */
-  mime: 'image/jpeg' | 'image/png' | 'image/webp';
+  /** 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' */
+  mime: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif';
 }
 
 const JPEG_SOF = [0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf];
@@ -101,11 +101,23 @@ function parseWebp(b: Uint8Array): ImageInfo {
   throw new Error('unrecognized WebP chunk');
 }
 
+function parseGif(b: Uint8Array): ImageInfo {
+  // Header "GIF87a" | "GIF89a" then logical screen descriptor (width/height, LE).
+  if (b.length < 13) throw new Error('truncated GIF');
+  const hdr = String.fromCharCode(b[0], b[1], b[2], b[3], b[4], b[5]);
+  if (hdr !== 'GIF87a' && hdr !== 'GIF89a') throw new Error('not a GIF');
+  const width = b[6] | (b[7] << 8);
+  const height = b[8] | (b[9] << 8);
+  if (!width || !height) throw new Error('bad GIF dims');
+  return { width, height, mime: 'image/gif' };
+}
+
 /** Reads a decodable image's real dimensions + detected MIME, or throws. */
 export function readImageInfo(bytes: Uint8Array): ImageInfo {
-  if (!bytes || bytes.length < 16) throw new Error('file too small to be an image');
+  if (!bytes || bytes.length < 13) throw new Error('file too small to be an image');
   if (bytes[0] === 0xff && bytes[1] === 0xd8) return parseJpeg(bytes);
   if (bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return parsePng(bytes);
   if (bytes.length >= 12 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) return parseWebp(bytes);
+  if (bytes.length >= 13 && (String.fromCharCode(bytes[0], bytes[1], bytes[2]) === 'GIF')) return parseGif(bytes);
   throw new Error('unrecognized image format');
 }

@@ -227,14 +227,15 @@ test('lists: filters, titles, unpublished flag, and only published snapshots for
   assert.equal(await getPublishedStory(db, a.id), null);
 });
 
-test('deleteDraft removes drafts only', async () => {
+test('deleteDraft removes draft and published stories', async () => {
   const db = fresh();
   const a = await draft(db, 'Gone');
   const b = await draft(db, 'Stays');
   await publishStory(db, b.id, { baseRev: b.rev }, deps());
   assert.deepEqual(await deleteDraft(db, a.id), { ok: true });
   assert.deepEqual(await deleteDraft(db, a.id), { ok: false, reason: 'not_found' });
-  assert.deepEqual(await deleteDraft(db, b.id), { ok: false, reason: 'published' });
+  assert.deepEqual(await deleteDraft(db, b.id), { ok: true }, 'a published story can be deleted');
+  assert.equal(await getStory(db, b.id), null);
 });
 
 test('database constraints hold even if application code is bypassed', async () => {
@@ -250,7 +251,8 @@ test('database constraints hold even if application code is bypassed', async () 
   assert.throws(() => ins(cols, `'y','observe','{}',0,'t','t'`), /CHECK/);
   ins(cols, base);
   assert.throws(() => ins(cols, base), /UNIQUE|PRIMARY/);
-  assert.throws(() => db.exec(`INSERT INTO images (id, r2_original, width, height, bytes, mime, sha256, filename, created_at) VALUES ('i','k',10,10,1,'image/gif','h','f','t')`), /CHECK/);
+  assert.throws(() => db.exec(`INSERT INTO images (id, r2_original, width, height, bytes, mime, sha256, filename, created_at) VALUES ('i','k',10,10,1,'image/tiff','h','f','t')`), /CHECK/);
+  db.exec(`INSERT INTO images (id, r2_original, width, height, bytes, mime, sha256, filename, created_at) VALUES ('i','k',10,10,1,'image/gif','h','f','t')`);
 });
 
 test('slug helpers', async () => {

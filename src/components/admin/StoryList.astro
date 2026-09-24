@@ -16,7 +16,7 @@ const utc = (iso: string) => new Date(iso).toLocaleString('en-US', { dateStyle: 
   stories.length === 0 ? (
     <p class="story-empty">{emptyText}</p>
   ) : (
-    <ul class="story-list">
+    <ul id="story-list" class="story-list">
       {stories.map((s) => (
         <li class="story-row">
           <div class="story-row__main">
@@ -34,6 +34,9 @@ const utc = (iso: string) => new Date(iso).toLocaleString('en-US', { dateStyle: 
             <span class="story-row__time">
               Edited <time data-local datetime={s.draftUpdatedAt}>{utc(s.draftUpdatedAt)}</time>
             </span>
+            <button type="button" class="story-row__delete" data-delete-id={s.id} data-delete-title={s.title}>
+              Delete
+            </button>
           </div>
         </li>
       ))}
@@ -119,4 +122,38 @@ const utc = (iso: string) => new Date(iso).toLocaleString('en-US', { dateStyle: 
       text-align: left;
     }
   }
+
+  .story-row__delete {
+    margin-top: 0.5rem;
+    font-family: var(--sans);
+    font-size: 0.85rem;
+    color: var(--ink-faint);
+    background: none;
+    border: 0;
+    padding: 0.4rem 0;
+    cursor: pointer;
+    border-bottom: 1px solid transparent;
+  }
+  .story-row__delete:hover {
+    color: #b33;
+    border-color: #b33;
+  }
+  .story-row__delete:focus-visible {
+    outline: 2px solid var(--accent-warm);
+    border-radius: 2px;
+  }
 </style>
+
+<script>
+  document.addEventListener('click', async (e) => {
+    const btn = (e.target as HTMLElement).closest('[data-delete-id]') as HTMLElement | null;
+    if (!btn) return;
+    const id = btn.getAttribute('data-delete-id');
+    const title = btn.getAttribute('data-delete-title') || 'this story';
+    if (!window.confirm(`Delete "${title}"? This removes the story and its published copy. This cannot be undone.`)) return;
+    btn.disabled = true;
+    const res = await fetch(`/api/admin/stories/${id}/`, { method: 'DELETE', credentials: 'same-origin' });
+    if (res.status === 204) window.location.reload();
+    else window.alert('Delete failed. Try again.');
+  });
+</script>
