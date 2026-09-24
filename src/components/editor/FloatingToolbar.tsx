@@ -21,15 +21,15 @@ export function FloatingToolbar({ editor }: { editor: ReturnType<typeof useEdito
 
     const coords = editor.view.coordsAtPos(from);
     const toolbar = toolbarRef.current;
-    if (!toolbar) return;
-
-    const toolbarRect = toolbar.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
 
-    let left = coords.left - toolbarRect.width / 2;
-    left = Math.max(16, Math.min(left, viewportWidth - toolbarRect.width - 16));
+    // Centered on the selection when measured; otherwise keep it near the
+    // caret so the first selection still shows a toolbar.
+    const half = toolbar ? toolbar.getBoundingClientRect().width / 2 : 20;
+    let left = coords.left - half;
+    left = Math.max(16, Math.min(left, viewportWidth - (toolbar ? toolbar.getBoundingClientRect().width + 16 : 56)));
 
-    let top = coords.top - toolbarRect.height - 12;
+    let top = coords.top - 12;
 
     if (top < 16) {
       top = coords.bottom + 12;
@@ -120,23 +120,23 @@ export function FloatingToolbar({ editor }: { editor: ReturnType<typeof useEdito
         <em>I</em>
       </button>
       <button type="button" className={`toolbar-btn ${hasLink ? 'active' : ''}`} onClick={handleLink} aria-pressed={hasLink} aria-label="Link (⌘K)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
       </button>
 
       {canHeading && (
         <>
           <button type="button" className={`toolbar-btn ${isHeadingActive(2) ? 'active' : ''}`} onClick={() => handleHeading(2)} aria-pressed={isHeadingActive(2)} aria-label="Heading">
-            H
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" aria-hidden="true"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M17 12l3-2v10"/></svg>
           </button>
           <button type="button" className={`toolbar-btn ${isHeadingActive(3) ? 'active' : ''}`} onClick={() => handleHeading(3)} aria-pressed={isHeadingActive(3)} aria-label="Subheading">
-            h
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" aria-hidden="true"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1"/></svg>
           </button>
         </>
       )}
 
       {canQuote && (
         <button type="button" className={`toolbar-btn ${isQuoteActive ? 'active' : ''}`} onClick={handleQuote} aria-pressed={isQuoteActive} aria-label="Quote">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V21c0 3 4 3 4 3z"></path><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V21c0 3 4 3 4 3z"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" aria-hidden="true"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V21c0 3 4 3 4 3z"></path><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V21c0 3 4 3 4 3z"></path></svg>
         </button>
       )}
     </div>
