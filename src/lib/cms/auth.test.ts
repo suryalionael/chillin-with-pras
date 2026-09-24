@@ -4,6 +4,7 @@ import { SignJWT, generateKeyPair, exportJWK, createLocalJWKSet, type JWK } from
 import {
   ACCESS_JWT_HEADER,
   createAccessAuthenticator,
+  adminEmailsFromEnv,
   createDevAuthenticator,
   isAdminEmail,
   resolveAuthenticator,
@@ -38,6 +39,26 @@ test('valid token for the admin is authorized', async () => {
   const r = await auth().authenticate(req(await token()));
   assert.equal(r.ok, true);
   if (r.ok) assert.deepEqual(r.identity, { email: ADMIN, source: 'cloudflare-access' });
+});
+
+test('a writer on the ADMIN_EMAILS allowlist is authorized', async () => {
+  const env: AuthEnv = { ADMIN_EMAILS: 'suryalionael@gmail.com, coauthor@example.com', ACCESS_TEAM_DOMAIN: TEAM, ACCESS_AUD: AUD };
+  const own = await auth(env).authenticate(req(await token()));
+  assert.equal(own.ok, true);
+  const guest = await auth(env).authenticate(req(await token({ email: 'coauthor@example.com' })));
+  assert.equal(guest.ok, true);
+  if (guest.ok) assert.equal(guest.identity.email, 'coauthor@example.com');
+  const stranger = await auth(env).authenticate(req(await token({ email: 'random@example.com' })));
+  assert.equal(stranger.ok, false);
+});
+
+test('adminEmailsFromEnv parses lists and falls back to ADMIN_EMAIL', () => {
+  assert.deepEqual(adminEmailsFromEnv({}), []);
+  assert.deepEqual(adminEmailsFromEnv({ ADMIN_EMAIL: 'a@x.com' }), ['a@x.com']);
+  assert.deepEqual(adminEmailsFromEnv({ ADMIN_EMAILS: ' A@X.com , b@Y.com\t' }), ['a@x.com', 'b@y.com']);
+  assert.deepEqual(adminEmailsFromEnv({ ADMIN_EMAIL: 'old@x.com', ADMIN_EMAILS: 'new@x.com' }), ['new@x.com']);
+  assert.deepEqual(adminEmailsFromEnv({ ADMIN_EMAILS: 'a@x.com, a@x.com' }), ['a@x.com']);
+
 });
 
 test('email match is case-insensitive but otherwise exact', async () => {
@@ -116,9 +137,10 @@ test('dev bypass: only under DEV, only when opted in, only on loopback', async (
 });
 
 test('isAdminEmail rejects empty and non-string', () => {
-  assert.equal(isAdminEmail(undefined, ADMIN), false);
-  assert.equal(isAdminEmail('', ''), false);
-  assert.equal(isAdminEmail(ADMIN, ''), false);
+  assert.equal(isAdminEmail(undefined, [ADMIN]), false);
+  assert.equal(isAdminEmail('', ['']), false);
+  assert.equal(isAdminEmail(ADMIN, []), false);
+  assert.equal(isAdminEmail(ADMIN, [ADMIN]), true);
 });
 
 test('isAdminPath protects admin surfaces regardless of encoding, case or slashes', () => {
@@ -135,12 +157,12 @@ test('isAdminPath protects admin surfaces regardless of encoding, case or slashe
 
 test('authorizeAdminRequest: needs locals.admin AND matching configured email', () => {
   const get = new Request('https://x.test/api/admin/stories/');
-  assert.equal(authorizeAdminRequest({ locals: {}, request: get }, ADMIN).ok, false);
+  assert.equal(authorizeAdminRequest({ locals: {}, request: get }, [ADMIN]).ok, false);
   const forged = { locals: { admin: { email: 'evil@x.com', source: 'cloudflare-access' as const } }, request: get };
-  assert.equal(authorizeAdminRequest(forged, ADMIN).ok, false);
+  assert.equal(authorizeAdminRequest(forged, [ADMIN]).ok, false);
   const good = { locals: { admin: { email: ADMIN, source: 'cloudflare-access' as const } }, request: get };
-  assert.equal(authorizeAdminRequest(good, ADMIN).ok, true);
-  assert.equal(authorizeAdminRequest(good, undefined).ok, false);
+  assert.equal(authorizeAdminRequest(good, [ADMIN]).ok, true);
+  assert.equal(authorizeAdminRequest(good, []).ok, false);
 });
 
 test('state-changing requests must be same-origin', () => {
@@ -149,6 +171,6 @@ test('state-changing requests must be same-origin', () => {
   assert.equal(isSameOrigin(post({ origin: 'https://www.chillinwithpras.com' })), true);
   assert.equal(isSameOrigin(post({ origin: 'https://evil.example' })), false);
   assert.equal(isSameOrigin(post({ 'sec-fetch-site': 'cross-site' })), false);
-  assert.equal(authorizeAdminRequest({ locals: { admin }, request: post({ origin: 'https://evil.example' }) }, ADMIN).ok, false);
-  assert.equal(authorizeAdminRequest({ locals: { admin }, request: post({ origin: 'https://www.chillinwithpras.com' }) }, ADMIN).ok, true);
+  assert.equal(authorizeAdminRequest({ locals: { admin }, request: post({ origin: 'https://evil.example' }) }, [ADMIN]).ok, false);
+  assert.equal(authorizeAdminRequest({ locals: { admin }, request: post({ origin: 'https://www.chillinwithpras.com' }) }, [ADMIN]).ok, true);
 });
