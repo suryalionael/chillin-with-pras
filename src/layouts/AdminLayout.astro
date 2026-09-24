@@ -15,8 +15,9 @@ import '../styles/editor.css';
 
 interface Props {
   title?: string;
+  bare?: boolean;
 }
-const { title = 'Admin' } = Astro.props;
+const { title = 'Admin', bare = false } = Astro.props;
 const admin = Astro.locals.admin;
 ---
 
@@ -30,8 +31,9 @@ const admin = Astro.locals.admin;
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{title} — Chillin’ with Pras</title>
   </head>
-  <body class="admin">
+  <body class:list={['admin', { 'admin--bare': bare }]}>
     <a class="skip-link" href="#main">Skip to content</a>
+    {!bare && (
     <header class="admin-bar">
       <div class="admin-bar__row">
         <a class="admin-bar__mark" href="/admin/">
@@ -47,7 +49,8 @@ const admin = Astro.locals.admin;
         </nav>
       </div>
     </header>
-    <main id="main" class="admin-main">
+    )}
+    <main id="main" class:list={['admin-main', { 'admin-main--bare': bare }]}>
       <slot />
     </main>
   </body>
@@ -63,6 +66,10 @@ const admin = Astro.locals.admin;
   .admin {
     background: var(--paper);
     color: var(--ink);
+  }
+
+  .admin--bare {
+    background: #ffffff;
   }
 
   .admin-bar {
@@ -203,7 +210,7 @@ const admin = Astro.locals.admin;
   .admin-notice {
     margin-top: 2rem;
     padding: 1.25rem 1.5rem;
-    border-left: 3px solid var(--accent-warm);
+    border-top: 1px solid var(--line);
     background: var(--paper-deep);
     font-size: 1.15rem;
     line-height: 1.6;

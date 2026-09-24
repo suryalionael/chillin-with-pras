@@ -134,7 +134,7 @@ export function ImagePicker({ isOpen, onClose, onSelect, onUpload }: ImagePicker
             >
               <input
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept="image/jpeg,image/png,image/webp,image/gif"
                 onChange={handleFileChange}
                 id="image-upload-input"
                 className="image-picker__file-input"
@@ -147,7 +147,7 @@ export function ImagePicker({ isOpen, onClose, onSelect, onUpload }: ImagePicker
                   <line x1="12" y1="3" x2="12" y2="15"/>
                 </svg>
                 <p>Drag & drop an image, or click to browse</p>
-                <span className="image-picker__hint">JPEG, PNG, WebP · max 20MB</span>
+                <span className="image-picker__hint">JPEG, PNG, WebP, GIF · max 20MB</span>
               </label>
             </div>
             {uploading && <div className="image-picker__uploading">Uploading…</div>}

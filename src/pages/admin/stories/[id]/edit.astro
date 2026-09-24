@@ -21,7 +21,7 @@ if (isUuid(id)) {
 if (!story) Astro.response.status = loadError ? 500 : 404;
 ---
 
-<AdminLayout title={story?.draft.title || 'Untitled story'}>
+<AdminLayout title={story?.draft.title || 'Untitled story'} bare={!!story}>
   {
     !story ? (
       <>

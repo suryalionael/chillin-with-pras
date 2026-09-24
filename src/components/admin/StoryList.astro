@@ -146,7 +146,7 @@ const utc = (iso: string) => new Date(iso).toLocaleString('en-US', { dateStyle: 
 
 <script>
   document.addEventListener('click', async (e) => {
-    const btn = (e.target as HTMLElement).closest('[data-delete-id]') as HTMLElement | null;
+    const btn = (e.target as HTMLElement).closest('[data-delete-id]') as HTMLButtonElement | null;
     if (!btn) return;
     const id = btn.getAttribute('data-delete-id');
     const title = btn.getAttribute('data-delete-title') || 'this story';

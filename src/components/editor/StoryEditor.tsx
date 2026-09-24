@@ -355,7 +355,7 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
             {status === 'saved' && 'Saved'}
             {status === 'unsaved' && 'Unsaved changes'}
             {status === 'error' && (error || 'Save failed')}
-            {status === 'idle' && 'Ready'}
+            {status === 'idle' && 'Draft in progress'}
           </span>
         </div>
         <div className="editor-header__right">
