@@ -4,6 +4,7 @@ import { getEnv } from '../../../lib/cms/runtime.ts';
 import { createStory, type D1Like } from '../../../lib/cms/db.ts';
 import { isSection } from '../../../lib/cms/schema.ts';
 import { authorizeAdminRequest } from '../../../lib/cms/guard.ts';
+import { adminEmailsFromEnv } from '../../../lib/cms/auth.ts';
 import { SECTION_LABEL } from '../../../lib/cms/sections.ts';
 
 export const prerender = false;
@@ -13,7 +14,7 @@ export const prerender = false;
 let error: string | null = null;
 if (Astro.request.method === 'POST') {
   const env = await getEnv();
-  const auth = authorizeAdminRequest({ locals: Astro.locals, request: Astro.request }, env.ADMIN_EMAIL);
+  const auth = authorizeAdminRequest({ locals: Astro.locals, request: Astro.request }, adminEmailsFromEnv(env));
   if (!auth.ok) return auth.response;
 
   const section = (await Astro.request.formData()).get('section');

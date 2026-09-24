@@ -1,0 +1,108 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+
+export const prerender = false;
+
+const started = Astro.request.url.includes('login') && Astro.request.method === 'GET';
+---
+
+<AdminLayout title="Sign in">
+  <header class="lg-head">
+    <p class="admin-kicker">Chillin’ with Pras</p>
+    <h1 class="lg-title">Sign in to write</h1>
+    <p class="lg-lede">Enter the shared invite code along with your email. Writers only: the public site is open to everyone.</p>
+  </header>
+
+  <form id="login-form" class="lg-form">
+    <label class="lg-field">
+      <span class="lg-label">Email</span>
+      <input id="lg-email" type="email" name="email" required autocomplete="username" placeholder="you@example.com" />
+    </label>
+    <label class="lg-field">
+      <span class="lg-label">Invite code</span>
+      <input id="lg-code" type="password" name="code" required autocomplete="current-password" placeholder="••••••••••" />
+    </label>
+    <p id="lg-msg" class="lg-msg" role="alert"></p>
+    <button class="admin-btn" type="submit">Sign in</button>
+  </form>
+</AdminLayout>
+
+<script>
+  const form = document.getElementById('login-form')!;
+  const msg = document.getElementById('lg-msg')!;
+  const emailEl = document.getElementById('lg-email') as HTMLInputElement;
+  const codeEl = document.getElementById('lg-code') as HTMLInputElement;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    msg.textContent = 'Signing in…';
+    const res = await fetch('/api/admin/login/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: emailEl.value, code: codeEl.value }),
+      credentials: 'same-origin',
+    });
+    const data = (await res.json().catch(() => ({}))) as { error?: { message?: string } };
+    if (!res.ok) {
+      msg.textContent = data.error?.message || 'Sign in failed.';
+      return;
+    }
+    window.location.href = '/admin/';
+  });
+</script>
+
+<style>
+  .lg-head {
+    margin-bottom: 2.5rem;
+  }
+  .lg-title {
+    margin-top: 0.75rem;
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(2.4rem, 6vw, 3.75rem);
+    line-height: 1.05;
+  }
+  .lg-lede {
+    margin-top: 1rem;
+    max-width: 34rem;
+    font-size: 1.2rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+  }
+  .lg-form {
+    max-width: 26rem;
+    display: grid;
+    gap: 1.4rem;
+  }
+  .lg-field {
+    display: grid;
+    gap: 0.4rem;
+  }
+  .lg-label {
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .lg-form input {
+    font-family: var(--sans);
+    font-size: 1.05rem;
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 4px;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .lg-form input:focus {
+    outline: 2px solid var(--accent-warm);
+    outline-offset: 2px;
+    border-color: var(--ink);
+  }
+  .lg-msg {
+    min-height: 1.4em;
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    color: #b33;
+  }
+</style>

@@ -13,7 +13,7 @@ import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from 'jose';
 
 export interface AdminIdentity {
   email: string;
-  source: 'cloudflare-access' | 'dev-bypass';
+  source: 'cloudflare-access' | 'dev-bypass' | 'access-code';
 }
 
 export interface AuthFailure {
@@ -31,6 +31,12 @@ export interface AdminAuthenticator {
 
 /** The subset of the Worker environment authentication reads. */
 export interface AuthEnv {
+  /**
+   * Comma/space-separated allowlist of writer emails. Prefer it; legacy
+   * `ADMIN_EMAIL` remains as a fallback so old configs keep working.
+   */
+  ADMIN_EMAILS?: string;
+  /** Legacy single-admin fallback. */
   ADMIN_EMAIL?: string;
   ACCESS_TEAM_DOMAIN?: string;
   ACCESS_AUD?: string;
@@ -53,11 +59,23 @@ export function normalizeEmail(value: unknown): string {
   return typeof value === 'string' ? value.trim().toLowerCase() : '';
 }
 
-/** Exact (case-insensitive) match against the single admin. No prefix/suffix/alias matching. */
-export function isAdminEmail(candidate: unknown, adminEmail: string): boolean {
+/**
+ * Parses the writer allowlist from env: ADMIN_EMAILS (comma/space separated)
+ * falls back to legacy ADMIN_EMAIL. Owners/invitees both land in this list.
+ */
+export function adminEmailsFromEnv(env: AuthEnv): string[] {
+  const raw = env.ADMIN_EMAILS ?? env.ADMIN_EMAIL ?? '';
+  const list = raw
+    .split(/[\s,]+/)
+    .map(normalizeEmail)
+    .filter((e) => e !== '');
+  return [...new Set(list)]; // dedupe, preserve order
+}
+
+/** Exact (case-insensitive) match against the writer allowlist. */
+export function isAdminEmail(candidate: unknown, allowed: string[]): boolean {
   const a = normalizeEmail(candidate);
-  const b = normalizeEmail(adminEmail);
-  return a !== '' && b !== '' && a === b;
+  return a !== '' && allowed.some((e) => e === a);
 }
 
 export interface AccessOptions {
@@ -79,17 +97,17 @@ function remoteJwks(teamDomain: string): JWTVerifyGetKey {
 }
 
 /**
- * Verifies a Cloudflare Access JWT and authorizes the single admin.
+ * Verifies a Cloudflare Access JWT and authorizes against the writer allowlist.
  * Fails closed: any missing configuration denies every request (503).
  */
 export function createAccessAuthenticator(env: AuthEnv, options: AccessOptions = {}): AdminAuthenticator {
-  const adminEmail = normalizeEmail(env.ADMIN_EMAIL);
+  const allowed = adminEmailsFromEnv(env);
   const teamDomain = (env.ACCESS_TEAM_DOMAIN ?? '').trim().toLowerCase();
   const audience = (env.ACCESS_AUD ?? '').trim();
 
   return {
     async authenticate(request) {
-      if (!adminEmail || !audience || !TEAM_DOMAIN_RX.test(teamDomain)) {
+      if (allowed.length === 0 || !audience || !TEAM_DOMAIN_RX.test(teamDomain)) {
         return fail(503, 'not_configured', 'Admin authentication is not configured.');
       }
 
@@ -110,10 +128,10 @@ export function createAccessAuthenticator(env: AuthEnv, options: AccessOptions =
         return fail(401, 'unauthenticated', 'Authentication required.');
       }
 
-      if (!isAdminEmail(email, adminEmail)) {
+      if (!isAdminEmail(email, allowed)) {
         return fail(403, 'forbidden', 'This account is not authorized.');
       }
-      return { ok: true, identity: { email: adminEmail, source: 'cloudflare-access' } };
+      return { ok: true, identity: { email: normalizeEmail(email), source: 'cloudflare-access' } };
     },
   };
 }
@@ -124,12 +142,12 @@ const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
 export function createDevAuthenticator(env: AuthEnv): AdminAuthenticator {
   return {
     async authenticate(request) {
-      const adminEmail = normalizeEmail(env.ADMIN_EMAIL);
-      if (!adminEmail) return fail(503, 'not_configured', 'ADMIN_EMAIL is not set.');
+      const allowed = adminEmailsFromEnv(env);
+      if (allowed.length === 0) return fail(503, 'not_configured', 'No admin email is set.');
       if (!LOOPBACK.has(new URL(request.url).hostname)) {
         return fail(403, 'forbidden', 'Dev bypass only works on loopback addresses.');
       }
-      return { ok: true, identity: { email: adminEmail, source: 'dev-bypass' } };
+      return { ok: true, identity: { email: allowed[0]!, source: 'dev-bypass' } };
     },
   };
 }

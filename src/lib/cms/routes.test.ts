@@ -39,7 +39,12 @@ test('nothing outside /admin and /api opts out of prerendering (the public site 
 });
 
 test('every API handler authorizes independently of the middleware', () => {
-  for (const f of files.filter((file) => file.startsWith('api/admin/'))) {
+  // login.ts is the credential entry point itself: it cannot call
+  // authorizeAdminRequest (that requires an already-established identity);
+  // its own invite-code check plus rate limiting is the authorization.
+  // logout.ts is middleware-guarded and only clears the caller's own cookie.
+  const exempt = new Set(['api/admin/login.ts', 'api/admin/logout.ts']);
+  for (const f of files.filter((file) => file.startsWith('api/admin/') && !exempt.has(file))) {
     const src = readFileSync(join(PAGES, f), 'utf8');
     assert.match(src, /adminEndpoint\(|authorizeAdminRequest\(/, `${f} must call adminEndpoint()/authorizeAdminRequest()`);
   }

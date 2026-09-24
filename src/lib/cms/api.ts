@@ -2,6 +2,7 @@
 // size cap, and consistent error bodies:
 //   { "error": { "code": "...", "message": "...", ...details } }
 import { authorizeAdminRequest, jsonError } from './guard.ts';
+import { adminEmailsFromEnv } from './auth.ts';
 import { getEnv } from './runtime.ts';
 import type { D1Like, PublishResult, SaveResult, Story } from './db.ts';
 
@@ -73,7 +74,7 @@ export async function adminEndpoint(
   handler: (call: AdminCall) => Promise<Response>,
 ): Promise<Response> {
   const env = await getEnv();
-  const auth = authorizeAdminRequest(context, env.ADMIN_EMAIL);
+  const auth = authorizeAdminRequest(context, adminEmailsFromEnv(env));
   if (!auth.ok) return auth.response;
   try {
     return await handler({ db: env.DB as unknown as D1Like, env, request: context.request });

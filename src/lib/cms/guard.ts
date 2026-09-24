@@ -54,15 +54,15 @@ export type Authorized = { ok: true; admin: AdminIdentity } | { ok: false; respo
 
 /**
  * Independent per-handler authorization. Re-checks the identity against the
- * configured admin email (not just "locals.admin exists") and enforces
+ * configured writer allowlist (not just "locals.admin exists") and enforces
  * same-origin for state-changing methods.
  */
 export function authorizeAdminRequest(
   context: { locals: Pick<App.Locals, 'admin'>; request: Request },
-  adminEmail: string | undefined,
+  adminEmails: string[],
 ): Authorized {
   const admin = context.locals.admin;
-  if (!admin || !adminEmail || !isAdminEmail(admin.email, adminEmail)) {
+  if (!admin || adminEmails.length === 0 || !isAdminEmail(admin.email, adminEmails)) {
     return { ok: false, response: jsonError(401, 'unauthenticated', 'Authentication required.') };
   }
   if (!SAFE_METHODS.has(context.request.method) && !isSameOrigin(context.request)) {

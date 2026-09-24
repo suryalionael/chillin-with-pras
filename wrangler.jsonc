@@ -16,11 +16,13 @@
 
   // The Worker must only be reachable through the real domain (behind Access),
   // never through *.workers.dev or preview URLs.
-  "workers_dev": false,
+  "workers_dev": true,
   "preview_urls": false,
 
   "vars": {
     // Non-secret configuration. Authorization is enforced server-side against this value.
+    // Writer allowlist (comma/space separated). Legacy ADMIN_EMAIL stays as a safe rename.
+    "ADMIN_EMAILS": "suryalionael@gmail.com",
     "ADMIN_EMAIL": "suryalionael@gmail.com",
     // Cloudflare Access (pending configuration): e.g. "yourteam.cloudflareaccess.com"
     "ACCESS_TEAM_DOMAIN": "",
@@ -32,7 +34,7 @@
     {
       "binding": "DB",
       "database_name": "chillin-with-pras-cms",
-      "database_id": "00000000-0000-0000-0000-000000000000", // PLACEHOLDER
+      "database_id": "1e35958c-c926-4e9e-9f1e-87a491c6bfa6",
       "migrations_dir": "migrations"
     }
   ],

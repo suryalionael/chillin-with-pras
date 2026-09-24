@@ -43,6 +43,7 @@ const admin = Astro.locals.admin;
           {admin && <span class="admin-bar__who" title={`Signed in as ${admin.email}`}>{admin.email}</span>}
           {admin?.source === 'dev-bypass' && <span class="admin-bar__dev" title="Local development: Cloudflare Access is not in front of this server.">local dev</span>}
           {admin?.source === 'cloudflare-access' && <a href="/cdn-cgi/access/logout">Sign out</a>}
+          {admin?.source === 'access-code' && <button type="button" class="admin-bar__signout" id="access-signout">Sign out</button>}
         </nav>
       </div>
     </header>
@@ -50,6 +51,12 @@ const admin = Astro.locals.admin;
       <slot />
     </main>
   </body>
+  <script>
+    document.getElementById('access-signout')?.addEventListener('click', async () => {
+      await fetch('/api/admin/logout/', { method: 'POST', credentials: 'same-origin' });
+      window.location.href = '/admin/login/';
+    });
+  </script>
 </html>
 
 <style is:global>
