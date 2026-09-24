@@ -63,6 +63,15 @@ const resImage = async (res: Response) => {
   return body.image;
 };
 
+function fixtureGif(w = 200, h = 150): ArrayBuffer {
+  const b = new Uint8Array(13);
+  const text = new TextEncoder();
+  b.set(text.encode('GIF89a'), 0);
+  b[6] = w & 0xff; b[7] = (w >> 8) & 0xff;
+  b[8] = h & 0xff; b[9] = (h >> 8) & 0xff;
+  return b.buffer as ArrayBuffer;
+}
+
 // ---------- valid uploads ----------
 
 test('upload endpoint: JPEG -> 200, real dims, D1 row, R2 object', async () => {
@@ -106,6 +115,18 @@ test('upload endpoint: WebP -> 200, correct dims/mime', async () => {
   assert.equal(image.width, 120);
   assert.equal(image.height, 80);
   assert.equal(image.mime, 'image/webp');
+  assert.ok(media.objects.has(image.r2Original));
+});
+
+test('upload endpoint: GIF -> 200, correct dims/mime', async () => {
+  const db = createTestDb();
+  const media = new FakeMedia();
+  const res = await upload(media, db, withFile(new File([fixtureGif(48, 32)], 'emoji.gif', { type: 'image/gif' })));
+  assert.equal(res.status, 200);
+  const image = await resImage(res);
+  assert.equal(image.width, 48);
+  assert.equal(image.height, 32);
+  assert.equal(image.mime, 'image/gif');
   assert.ok(media.objects.has(image.r2Original));
 });
 
@@ -154,7 +175,7 @@ test('upload endpoint: malformed binary with image MIME is rejected (422)', asyn
 test('upload endpoint: unsupported MIME is rejected (415)', async () => {
   const db = createTestDb();
   const media = new FakeMedia();
-  const res = await upload(media, db, withFile(new File(['x'.repeat(64)], 'a.gif', { type: 'image/gif' })));
+  const res = await upload(media, db, withFile(new File(['x'.repeat(64)], 'a.avif', { type: 'image/avif' })));
   assert.equal(res.status, 415);
   assert.equal((await countImages(db)), 0);
   assert.equal(media.objects.size, 0);
