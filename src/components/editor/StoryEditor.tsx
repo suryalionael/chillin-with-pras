@@ -3,17 +3,24 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Link from '@tiptap/extension-link';
-import Suggestion, { type SuggestionOptions } from '@tiptap/suggestion';
-import { v4 as uuidv4 } from 'crypto';
+import Suggestion from '@tiptap/suggestion';
 import type { StoryDocument } from '../../lib/cms/schema.ts';
 import { FloatingToolbar } from './FloatingToolbar.tsx';
-import { SlashMenu } from './SlashMenu.tsx';
+import { SlashMenu, SLASH_ITEMS, type SlashMenuProps } from './SlashMenu.tsx';
 import { useAutosave } from './useAutosave.ts';
 import { useLocalBackup } from './useLocalBackup.ts';
 import { Image } from './ImageExtension.ts';
 import { Embed } from './EmbedExtension.ts';
 import { ImagePicker } from './ImagePicker.tsx';
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, type MouseEvent as ReactMouseEvent } from 'react';
+
+/** Shape of a JSON error/response body from the admin API. Cloudflare Workers'
+ * Response.json() types as unknown, so every fetch call site needs this. */
+interface ApiBody {
+  story?: unknown;
+  build?: { revision?: number | null; status?: string; requested?: boolean; error?: string | null };
+  error?: { code?: string; message?: string; currentRev?: number; issues?: { message: string }[] };
+}
 
 interface StoryEditorProps {
   storyId: string;
@@ -29,7 +36,6 @@ const BASE_EXTENSIONS = [
     heading: { levels: [2, 3] },
     bulletList: { keepMarks: true, keepAttributes: false },
     orderedList: { keepMarks: true, keepAttributes: false },
-    blockquote: { keepMarks: true, keepAttributes: false },
     link: false,
   }),
   Placeholder.configure({
@@ -57,17 +63,6 @@ const BASE_EXTENSIONS = [
   }),
 ];
 
-const SLASH_ITEMS = [
-  { title: 'Paragraph', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setParagraph().run() },
-  { title: 'Heading', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHeading({ level: 2 }).run() },
-  { title: 'Subheading', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHeading({ level: 3 }).run() },
-  { title: 'Quote', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setBlockquote().run() },
-  { title: 'Bulleted list', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleBulletList().run() },
-  { title: 'Numbered list', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleOrderedList().run() },
-  { title: 'Divider', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHorizontalRule().run() },
-  { title: 'Image', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).run() },
-  { title: 'Embed', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setEmbed({ url: '' }).run() },
-];
 
 export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleChange, onSubtitleChange }: StoryEditorProps) {
   const [title, setTitle] = useState(initialDoc.title);
@@ -77,9 +72,14 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'unsaved' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [showConflict, setShowConflict] = useState<{ currentRev: number } | null>(null);
+  const [showInsertPlus, setShowInsertPlus] = useState(false);
+  const [insertPlusPos, setInsertPlusPos] = useState({ top: 0, left: 0 });
   const [imagePickerOpen, setImagePickerOpen] = useState(false);
   const [pendingImageRange, setPendingImageRange] = useState<{ from: number; to: number } | null>(null);
   const [publishNote, setPublishNote] = useState<string | null>(null);
+  const insertPlusBlockRef = useRef<{ from: number; to: number } | null>(null);
+  const pageMenuRef = useRef<SlashMenu | null>(null);
+  const hoveredBlockRef = useRef<Element | null>(null);
 
   // @tiptap/suggestion v3 exports a ProseMirror plugin factory, not an
   // extension with .configure(). It must be wrapped in an Extension whose
@@ -136,7 +136,9 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
       },
     },
     onUpdate: ({ editor }) => {
-      onEditorUpdate(editor.getJSON());
+      // getJSON() returns tiptap's generic JSON shape; the server re-validates
+      // every document against the strict schema before it is ever stored.
+      onEditorUpdate(editor.getJSON() as StoryDocument['body']);
     },
   });
 
@@ -144,13 +146,141 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
   // fires onUpdate before React has mounted and triggers the "state update on an
   // unmounted component" warning. Skip updates until after mount.
   const mountedRef = useRef(false);
-  const onEditorUpdate = useCallback((newDoc) => {
-    if (!mountedRef.current) return;
-    setDoc((prev) => ({ ...prev, body: newDoc }));
-  }, []);
   useEffect(() => {
     mountedRef.current = true;
   }, []);
+
+  const closeInsertMenu = useCallback(() => {
+    pageMenuRef.current?.destroy();
+    pageMenuRef.current = null;
+  }, []);
+
+  const openInsertMenu = useCallback((range: { from: number; to: number }) => {
+    if (!editor?.view) return;
+    closeInsertMenu();
+    setShowInsertPlus(false);
+    hoveredBlockRef.current = null;
+
+    // A block that already has text must not be converted/merged into
+    // whatever the user picks next — insert a fresh empty paragraph right
+    // after it and open the menu there instead. An already-empty block (the
+    // common case: the last line of the document) can be used directly.
+    // Read the live document here rather than trusting anything cached at
+    // hover time: the user typically clicks into a block and starts typing
+    // without ever moving the mouse again, so a value captured on mouse-enter
+    // would be stale by the time they open this menu.
+    const $pos = editor.state.doc.resolve(range.from);
+    const blockIsEmpty = $pos.parent.content.size === 0;
+    let menuPos = range.from;
+    if (!blockIsEmpty) {
+      const insertPos = $pos.after($pos.depth);
+      editor.chain().focus().insertContentAt(insertPos, { type: 'paragraph' }).run();
+      menuPos = insertPos + 1;
+    }
+    editor.chain().focus().setTextSelection(menuPos).run();
+    const menuRange = { from: menuPos, to: menuPos };
+    const props: SlashMenuProps = { editor, range: menuRange, query: '' };
+    const menu = new SlashMenu(props);
+    menu.setOnImagePickerRequest((r) => {
+      setPendingImageRange(r);
+      setImagePickerOpen(true);
+    });
+    menu.setOnDestroy(() => {
+      if (pageMenuRef.current === menu) pageMenuRef.current = null;
+      insertPlusBlockRef.current = null;
+    });
+    pageMenuRef.current = menu;
+  }, [editor, closeInsertMenu]);
+
+  const handleBodyMouseMove = useCallback((e: ReactMouseEvent<HTMLElement>) => {
+    if (!editor?.view || pageMenuRef.current) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('.editor-insert-plus')) return;
+    const dom = editor.view.dom as HTMLElement;
+    const domRect = dom.getBoundingClientRect();
+
+    // The + button sits in the gutter to the left of the text, outside any
+    // block element. A plain target.closest() hit-test hides the button the
+    // instant the cursor crosses that gap — before it ever reaches the
+    // button — because the gap isn't over a <p>/<h2>/etc either. Checking
+    // "is the cursor's Y within a block's row" instead (regardless of exactly
+    // what DOM node is under the pixel) survives that gap.
+    const GUTTER = 60;
+    if (e.clientX < domRect.left - GUTTER || e.clientX > domRect.right || e.clientY < domRect.top || e.clientY > domRect.bottom) {
+      if (hoveredBlockRef.current) {
+        hoveredBlockRef.current = null;
+        setShowInsertPlus(false);
+      }
+      return;
+    }
+
+    let block: HTMLElement | null = null;
+    for (const el of dom.querySelectorAll('p, h2, h3, blockquote, li')) {
+      const r = (el as HTMLElement).getBoundingClientRect();
+      if (e.clientY >= r.top && e.clientY <= r.bottom) {
+        block = el as HTMLElement;
+        break;
+      }
+    }
+    if (!block) {
+      if (hoveredBlockRef.current) {
+        hoveredBlockRef.current = null;
+        setShowInsertPlus(false);
+      }
+      return;
+    }
+    if (hoveredBlockRef.current === block) return;
+    hoveredBlockRef.current = block;
+    try {
+      const from = editor.view.posAtDOM(block, 0);
+      const coords = editor.view.coordsAtPos(from);
+      insertPlusBlockRef.current = { from, to: from };
+      setInsertPlusPos({ top: coords.top + (coords.bottom - coords.top) / 2 - 10, left: coords.left - 44 });
+      setShowInsertPlus(true);
+    } catch {
+      setShowInsertPlus(false);
+    }
+  }, [editor]);
+
+  const handleBodyMouseLeave = useCallback((e: ReactMouseEvent<HTMLElement>) => {
+    const to = e.relatedTarget as Node | null;
+    if (to && (to as HTMLElement).closest?.('.editor-insert-plus')) return;
+    hoveredBlockRef.current = null;
+    setShowInsertPlus(false);
+  }, []);
+
+  useEffect(() => {
+    if (!editor) return;
+    const onDocKeydown = (e: KeyboardEvent) => {
+      const menu = pageMenuRef.current;
+      if (!menu || !menu.el || !insertPlusBlockRef.current) return;
+      const prev = insertPlusBlockRef.current;
+      const handled = menu.onKeyDown({ view: editor.view, event: e, range: prev });
+      if (handled) {
+        e.preventDefault();
+        if (!pageMenuRef.current?.el) {
+          pageMenuRef.current = null;
+          insertPlusBlockRef.current = null;
+          setShowInsertPlus(false);
+        }
+      }
+    };
+    document.addEventListener('keydown', onDocKeydown, true);
+    const onDocDown = (e: MouseEvent) => {
+      if (!pageMenuRef.current) return;
+      const el = pageMenuRef.current.el;
+      if (el && el.contains(e.target as Node)) return;
+      closeInsertMenu();
+      insertPlusBlockRef.current = null;
+      setShowInsertPlus(false);
+    };
+    document.addEventListener('mousedown', onDocDown, true);
+    return () => {
+      document.removeEventListener('keydown', onDocKeydown, true);
+      document.removeEventListener('mousedown', onDocDown, true);
+      closeInsertMenu();
+    };
+  }, [editor, closeInsertMenu]);
 
   const { saveWithDebounce, cancelSave } = useAutosave({
     storyId,
@@ -175,6 +305,19 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
     },
   });
 
+  // The actual save trigger for everything the author writes: title/subtitle
+  // changes call this too (handleTitleInput/handleSubtitleInput below), but
+  // this is the only place body edits — every paragraph, image, heading —
+  // ever get scheduled to save. Without it the draft only persists whatever
+  // was true the last time the title or subtitle happened to change, which
+  // for most of a writing session is nothing.
+  const onEditorUpdate = useCallback((newDoc: StoryDocument['body']) => {
+    if (!mountedRef.current) return;
+    setDoc((prev) => ({ ...prev, body: newDoc }));
+    setStatus('unsaved');
+    void saveWithDebounce();
+  }, [saveWithDebounce]);
+
   useLocalBackup({
     storyId,
     getDoc: () => doc,
@@ -196,7 +339,7 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
       setTitle(value);
       onTitleChange(value);
       setStatus('unsaved');
-      saveWithDebounce();
+      void saveWithDebounce();
     },
     [onTitleChange, saveWithDebounce],
   );
@@ -207,7 +350,7 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
       setSubtitle(value);
       onSubtitleChange(value);
       setStatus('unsaved');
-      saveWithDebounce();
+      void saveWithDebounce();
     },
     [onSubtitleChange, saveWithDebounce],
   );
@@ -246,8 +389,8 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
       }
     } catch (e) {
       if (e instanceof Response && e.status === 409) {
-        const data = await e.json();
-        setShowConflict({ currentRev: data.error.currentRev });
+        const data = (await e.json()) as ApiBody;
+        setShowConflict({ currentRev: data.error?.currentRev ?? rev });
       } else {
         setError(e instanceof Error ? e.message : 'Could not save before publishing.');
       }
@@ -262,12 +405,12 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
         body: JSON.stringify({ baseRev }),
         credentials: 'same-origin',
       });
-      const data = await res.json().catch(() => ({}));
+      const data = (await res.json().catch(() => ({}))) as ApiBody;
       if (!res.ok) {
         if (res.status === 409 && data.error?.code === 'conflict') {
-          setShowConflict({ currentRev: data.error.currentRev });
+          setShowConflict({ currentRev: data.error.currentRev ?? rev });
         } else if (res.status === 422 && Array.isArray(data.error?.issues)) {
-          setError(data.error.issues.map((i: { message: string }) => i.message).join(' '));
+          setError(data.error.issues.map((i) => i.message).join(' '));
         } else {
           setError(data.error?.message || 'Publish failed');
         }
@@ -276,14 +419,11 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
       }
       setStatus('saved');
       setError(null);
-      const build = (data as { build?: { triggered?: boolean; revision?: number | null; status?: string; error?: string | null } } | null)?.build;
-      if (build && build.status && build.status !== 'deployed') {
-        if (build.error) setPublishNote(`Published. Deployment not started: ${build.error}`);
-        else if (build.status === 'deploy_requested') setPublishNote(`Published. Deployment requested (revision ${build.revision ?? '—'}).`);
-        else setPublishNote(`Published. Deployment ${build.status}.`);
-      } else {
-        setPublishNote(null);
-      }
+      const build = data.build;
+      if (build?.status === 'deployed') setPublishNote(null);
+      else if (build?.status === 'failed') setPublishNote(`Published, but shipping it to the live site failed: ${build.error}. It will retry on the next publish.`);
+      else if (build?.requested) setPublishNote(`Published (revision ${build.revision ?? '—'}). Deployment is not configured yet, so it has not gone live.`);
+      else setPublishNote(null);
       setTimeout(() => setStatus('idle'), 2000);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Publish failed');
@@ -321,27 +461,6 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
     setPendingImageRange(null);
     setImagePickerOpen(false);
   }, [editor, pendingImageRange]);
-
-  const handleImageUpload = useCallback(async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    try {
-      const res = await fetch('/api/admin/images/', {
-        method: 'POST',
-        body: formData,
-        credentials: 'same-origin',
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error?.message || 'Upload failed');
-      }
-      const data = await res.json();
-      return data.image;
-    } catch (e) {
-      console.error('Image upload failed', e);
-      return null;
-    }
-  }, []);
 
   return (
     <div className="editor-shell" data-testid="editor-root">
@@ -383,7 +502,7 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
         </div>
       )}
 
-      <main className="editor-main">
+      <main className="editor-main" onMouseMove={handleBodyMouseMove} onMouseLeave={handleBodyMouseLeave}>
         <div className="editor-writing-area">
           <textarea
             id="editor-title"
@@ -408,13 +527,24 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
           </div>
         </div>
 
+        {showInsertPlus && insertPlusBlockRef.current && (
+          <button
+            type="button"
+            className="editor-insert-plus"
+            style={{ top: insertPlusPos.top, left: insertPlusPos.left }}
+            onClick={() => { const r = insertPlusBlockRef.current; if (r) openInsertMenu(r); }}
+            aria-label="Add content"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        )}
+
         <FloatingToolbar editor={editor} />
 
         <ImagePicker
           isOpen={imagePickerOpen}
           onClose={() => setImagePickerOpen(false)}
           onSelect={handleImageSelect}
-          onUpload={handleImageUpload}
         />
       </main>
     </div>
