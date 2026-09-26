@@ -268,43 +268,10 @@ export function authorizeDeployToken(env: DeployEnv, request: Request): AuthResu
   return { ok: true };
 }
 
-// ---------- deploy trigger (CI) ----------
-
-export interface DeployTriggerEnv {
-  GITHUB_REPO?: string;
-  CMS_DEPLOY_TRIGGER_TOKEN?: string;
-}
-
-export type TriggerResult = { ok: true } | { ok: false; skipped: true; reason: string } | { ok: false; skipped: false; reason: string };
-
-/**
- * Fires a GitHub repository_dispatch event that starts the publish-deploy
- * workflow. Injectable so tests can stub it; defaults to a real dispatch call.
- */
-export type DeployTrigger = (env: DeployTriggerEnv, deployment: Deployment) => Promise<TriggerResult>;
-
-const REPO_RX = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
-
-export const githubDispatchTrigger: DeployTrigger = async (env, deployment) => {
-  const repo = (env.GITHUB_REPO ?? '').trim();
-  const token = (env.CMS_DEPLOY_TRIGGER_TOKEN ?? '').trim();
-  if (!repo || !REPO_RX.test(repo) || !token) {
-    return { ok: false, skipped: true, reason: 'Deploy trigger is not configured.' };
-  }
-  try {
-    const res = await fetch(`https://api.github.com/repos/${repo}/dispatches`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: `Bearer ${token}`, 'user-agent': 'chillin-with-pras-cms' },
-      body: JSON.stringify({
-        event_type: 'cms-publish',
-        client_payload: { revision: deployment.revision, storyId: deployment.storyId },
-      }),
-    });
-    if (res.status < 200 || res.status >= 300) {
-      return { ok: false, skipped: false, reason: `GitHub dispatch failed (${res.status}).` };
-    }
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, skipped: false, reason: `Deploy trigger failed: ${e instanceof Error ? e.message : 'network error'}` };
-  }
-};
+// ---------- deploy (manual, local) ----------
+//
+// There is no CI trigger. Publishing only records that a revision is waiting
+// to go out (above); actually shipping it is a deliberate, local step: run
+// `npm run deploy`, which fetches this revision's snapshot from
+// /api/deploy/snapshot/, builds the static site, runs `wrangler deploy`, and
+// reports status back through /api/deploy/status/. See scripts/deploy.mjs.

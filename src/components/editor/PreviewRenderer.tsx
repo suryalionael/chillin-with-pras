@@ -1,8 +1,11 @@
 import { useMemo } from 'react';
-import { docToBlocks, ArticleBlock, Inline, CmsImageBlock } from '../../lib/preview-blocks.ts';
+import { docToBlocks } from '../../lib/preview-blocks.ts';
+import type { ArticleBlock, Inline, CmsImageBlock, SubheadingBlock, ListBlock, ListItem, QuoteBlock, EmbedBlock } from '../../lib/preview-blocks.ts';
+import { parseEmbedUrl } from '../../lib/content/embed-url.ts';
+import type { StoryDocument } from '../../lib/cms/schema.ts';
 
 interface PreviewRendererProps {
-  doc: any;
+  doc: StoryDocument;
   title: string;
   subtitle: string;
   dateline: string;
@@ -50,7 +53,7 @@ function PreviewImage({ block }: { block: CmsImageBlock }) {
     <div className="prose__figure">
       <figure className={`figure figure--single figure--${tone}`}>
         <div className="figure__box" style={{ width: 'min(100%, calc(var(--ar) * var(--cap)))', marginInline: 'auto' }}>
-          <div className="photo-frame" style={{ '--ar': '16 / 9' }}>
+          <div className="photo-frame" style={{ '--ar': '16 / 9' } as React.CSSProperties}>
             <img
               src={imageUrl}
               alt={block.decorative ? '' : block.alt}
@@ -68,23 +71,23 @@ function PreviewImage({ block }: { block: CmsImageBlock }) {
 }
 
 function PreviewList({ block }: { block: ListBlock }) {
-  const renderItems = (items: any[], depth = 0) => (
-    <ul style={{ listStyle: block.ordered ? 'decimal' : 'disc', paddingLeft: depth > 0 ? '1.5rem' : '1.5rem', margin: '1rem 0' }}>
+  const renderItems = (items: ListItem[], ordered: boolean, depth = 0): React.ReactNode => (
+    <ul style={{ listStyle: ordered ? 'decimal' : 'disc', paddingLeft: '1.5rem', margin: '1rem 0' }}>
       {items.map((item, i) => (
         <li key={i} style={{ margin: '0.5rem 0' }}>
           {item.inline && renderInline(item.inline)}
-          {item.children.length > 0 && renderItems(item.children.map(c => ({ ordered: c.ordered, items: c.items })), depth + 1)}
+          {item.children.map((child, j) => <div key={j}>{renderItems(child.items, child.ordered, depth + 1)}</div>)}
         </li>
       ))}
     </ul>
   );
-  return renderItems(block.items);
+  return renderItems(block.items, block.ordered);
 }
 
 function PreviewQuote({ block }: { block: QuoteBlock }) {
   return (
     <blockquote style={{ margin: '2rem 0', paddingLeft: '1.5rem', borderLeft: '3px solid var(--accent-warm)', fontStyle: 'italic', color: 'var(--ink-soft)' }}>
-      {block.paragraphs.map((p, i) => (
+      {block.paragraphs.map((p: Inline[], i: number) => (
         <p key={i} style={{ margin: 0 }}>{renderInline(p)}</p>
       ))}
     </blockquote>
@@ -96,10 +99,31 @@ function PreviewDivider() {
 }
 
 function PreviewEmbed({ block }: { block: EmbedBlock }) {
+  if (!block.url) return null;
+  const parsed = parseEmbedUrl(block.url);
+  if (parsed) {
+    return (
+      <div style={{ position: 'relative', margin: '2.5rem auto', maxWidth: '44rem', width: '100%', paddingTop: '56.25%', background: '#000', borderRadius: '2px', overflow: 'hidden' }}>
+        <iframe
+          src={parsed.embedSrc}
+          title="Embedded content"
+          loading="lazy"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
+        />
+      </div>
+    );
+  }
   return (
-    <div style={{ margin: '2rem auto', padding: '2rem', maxWidth: '42rem', background: 'var(--paper-deep)', border: '1px dashed var(--line-strong)', borderRadius: '2px', textAlign: 'center', fontFamily: 'var(--sans)', color: 'var(--ink-soft)' }}>
-      Embed: {block.url || '(enter URL)'}
-    </div>
+    <a
+      href={block.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{ display: 'block', margin: '2rem auto', padding: '1.25rem 1.5rem', maxWidth: '42rem', background: 'var(--paper-deep)', border: '1px solid var(--line-strong)', borderRadius: '2px', fontFamily: 'var(--sans)', color: 'var(--accent-warm)', textDecoration: 'none', wordBreak: 'break-word' }}
+    >
+      {block.url}
+    </a>
   );
 }
 

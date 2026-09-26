@@ -3,7 +3,8 @@ import { adminEndpoint, failureResponse, isUuid, json, notFound, readJson, story
 import { publishStory } from '../../../../../lib/cms/db.ts';
 import { isLegacySlug } from '../../../../../lib/cms/legacy-slugs.ts';
 import { jsonError } from '../../../../../lib/cms/guard.ts';
-import { githubDispatchTrigger, nextRevision, requestDeployment } from '../../../../../lib/cms/deploy.ts';
+import { buildPublishedSnapshot, markDeploymentStatus, nextRevision, requestDeployment } from '../../../../../lib/cms/deploy.ts';
+import { publishSnapshotToGithub, type GithubPublishEnv } from '../../../../../lib/cms/github-publish.ts';
 
 export const prerender = false;
 
@@ -14,16 +15,19 @@ export const prerender = false;
  *   { "baseRev": 8, "publishedAt"?: "YYYY-MM-DD", "slug"?: string }
  *
  * baseRev must equal the current draft revision: you publish exactly what you last saw.
- * Copies draft -> published snapshot atomically, then records a durable deployment
- * request (monotonic revision) and fires the deploy trigger (best-effort).
+ * Copies draft -> published snapshot atomically, records a durable deployment request
+ * (monotonic revision), then ships that revision straight to the live site by committing
+ * the published snapshot + any new referenced images to `.cms/` on `main` (GitHub's Git
+ * Data API — see github-publish.ts). That push is what the `deploy-pages` GitHub Actions
+ * workflow rebuilds and deploys from. No local step, no separate CI trigger.
  *
- *   200 { story, build: { triggered, revision, status, error? } }
+ *   200 { story, build: { revision, status, requested, error? } }
  *   409 conflict | slug_taken | locked      422 validation (missing title/content/alt text…)
  *
- * Publishing the CMS snapshot and requesting the static deployment are separate
- * events. A trigger failure never undoes the publish (content is authoritative);
- * it is surfaced as `build.triggered=false` and the deployment row stays
- * `deploy_requested`.
+ * Publishing the CMS snapshot and shipping it to GitHub are separate events. If either the
+ * revision bookkeeping or the GitHub push fails, the publish still stands (content is
+ * authoritative) — this just reports that the site was not updated, so retrying is safe
+ * and never risks the CMS's own record of what's published.
  */
 export const POST: APIRoute = (context) =>
   adminEndpoint(context, async ({ db, env, request }) => {
@@ -46,29 +50,33 @@ export const POST: APIRoute = (context) =>
     );
     if (!result.ok) return failureResponse(result);
 
-    // Content is now published. Record a durable deployment request. If this
-    // bookkeeping fails, the publish stands and we report that no deployment
-    // was requested rather than pretending one was.
-    let build: { triggered: boolean; revision: number | null; status: string; requested: boolean; error: string | null };
+    // Content is now published. Record a durable deployment request, then try to
+    // ship it immediately. If the revision bookkeeping itself fails, report that
+    // no deployment was requested rather than pretending one was.
+    let build: { revision: number | null; status: string; requested: boolean; error: string | null };
     try {
       const revision = await nextRevision(db);
-      const deployment = await requestDeployment(db, {
+      await requestDeployment(db, {
         revision,
         storyId: result.story.id,
         publishedAt: result.story.publishedAt ?? result.story.pubUpdatedAt ?? new Date().toISOString(),
         payload: { slug: result.story.slug, title: result.story.draft.title },
       });
-      const trigger = await githubDispatchTrigger(env as Parameters<typeof githubDispatchTrigger>[0], deployment);
-      build = {
-        triggered: trigger.ok,
-        revision,
-        status: 'deploy_requested',
-        requested: true,
-        error: trigger.ok ? null : trigger.reason,
-      };
+
+      const snapshot = await buildPublishedSnapshot(db);
+      const shipped = await publishSnapshotToGithub(env as unknown as GithubPublishEnv, db, snapshot);
+      if (shipped.ok) {
+        await markDeploymentStatus(db, { revision, status: 'deployed', buildId: shipped.commitSha });
+        build = { revision, status: 'deployed', requested: true, error: null };
+      } else if (shipped.skipped) {
+        build = { revision, status: 'deploy_requested', requested: true, error: null };
+      } else {
+        await markDeploymentStatus(db, { revision, status: 'failed', error: shipped.reason });
+        build = { revision, status: 'failed', requested: true, error: shipped.reason };
+      }
     } catch (e) {
       console.error('deployment request failed after publish', e instanceof Error ? e.message : e);
-      build = { triggered: false, revision: null, status: 'deploy_error', requested: false, error: 'Deployment request could not be recorded.' };
+      build = { revision: null, status: 'deploy_error', requested: false, error: 'Deployment request could not be recorded.' };
     }
 
     return json({ story: storyJson(result.story), build });

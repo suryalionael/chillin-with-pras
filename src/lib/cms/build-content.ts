@@ -12,7 +12,7 @@
 // Set CMS_BUILD_SKIP=1 to build without CMS stories on purpose.
 
 import { createClient } from '@libsql/client';
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { cwd } from 'node:process';
 import type { PublishedStory } from './db.ts';
@@ -23,10 +23,17 @@ import { globSync } from 'glob';
 const projectRoot = cwd();
 const siteData = JSON.parse(readFileSync(join(projectRoot, 'src/data/site.json'), 'utf-8')) as RawSite;
 
-// Find the local D1 database file (has a hash in the name)
+// Find the local D1 database file (has a hash in the name). Miniflare can
+// leave more than one non-metadata sqlite file behind across restarts/config
+// changes — picking the most recently written one is the only reliable way
+// to find the file the currently-running dev server is actually using.
 function findLocalDbPath(): string | null {
-  const files = globSync('.wrangler/state/**/d1/*/*.sqlite', { absolute: true });
-  return files.find((f) => !f.endsWith('metadata.sqlite')) || null;
+  const files = globSync('.wrangler/state/**/d1/*/*.sqlite', { absolute: true })
+    .filter((f) => !f.endsWith('metadata.sqlite'));
+  if (files.length === 0) return null;
+  return files
+    .map((f) => ({ f, mtime: statSync(f).mtimeMs }))
+    .sort((a, b) => b.mtime - a.mtime)[0].f;
 }
 
 const LOCAL_DB_PATH = findLocalDbPath();

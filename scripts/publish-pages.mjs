@@ -19,17 +19,43 @@
 // stays untouched (the Article still carries imageId; only the URL resolution
 // changes). After running, commit `.cms/` together with the new articles on
 // main, and the deploy-pages workflow builds the site.
+//
+// It also reports this revision as handled back to the local dev server's
+// deployment tracker (best-effort — never fails the export), so the admin
+// dashboard's "waiting to be deployed" state clears instead of sitting stuck
+// forever, the same way it would if nothing had ever picked the revision up.
 import { createClient } from '@libsql/client';
 import { globSync } from 'glob';
-import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, statSync } from 'node:fs';
 import { join, basename } from 'node:path';
 
 const DEV_ORIGIN = process.env.CMS_DEV_ORIGIN || 'http://localhost:4321';
 
-// find the local D1 sqlite file (mirrors build-content.ts)
+function readDevPipelineToken() {
+  if (process.env.CMS_PIPELINE_TOKEN) return process.env.CMS_PIPELINE_TOKEN;
+  try {
+    const text = readFileSync('.dev.vars', 'utf8');
+    for (const line of text.split('\n')) {
+      const m = /^\s*CMS_PIPELINE_TOKEN\s*=\s*(.+?)\s*$/.exec(line);
+      if (m) return m[1];
+    }
+  } catch {
+    // .dev.vars not present — reporting is skipped below.
+  }
+  return null;
+}
+
+// find the local D1 sqlite file (mirrors build-content.ts). Miniflare can
+// leave more than one non-metadata sqlite file behind across restarts/config
+// changes — picking the most recently written one is the only reliable way
+// to find the file the currently-running dev server is actually using.
 function findLocalDbPath() {
-  const files = globSync('.wrangler/state/**/d1/*/*.sqlite', { absolute: true });
-  return files.find((f) => !f.endsWith('metadata.sqlite') && !f.endsWith('*.sqlite')) || null;
+  const files = globSync('.wrangler/state/**/d1/*/*.sqlite', { absolute: true })
+    .filter((f) => !f.endsWith('metadata.sqlite'));
+  if (files.length === 0) return null;
+  return files
+    .map((f) => ({ f, mtime: statSync(f).mtimeMs }))
+    .sort((a, b) => b.mtime - a.mtime)[0].f;
 }
 
 const dbPath = findLocalDbPath();
@@ -117,4 +143,23 @@ console.log(`  .cms/media/               — exported image bytes`);
 console.log('');
 console.log('Next: commit .cms/ together with the article changes on main, then the');
 console.log('GitHub Pages workflow rebuilds the site from this snapshot.');
+
+// ---------- 4. tell the CMS this revision has been handled (best-effort) ----------
+const pipelineToken = readDevPipelineToken();
+if (pipelineToken && revision > 0) {
+  try {
+    const res = await fetch(`${DEV_ORIGIN}/api/deploy/status/`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${pipelineToken}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ revision, status: 'deployed', buildId: 'cms:publish-pages (local)' }),
+    });
+    if (res.ok) console.log(`\nMarked revision ${revision} as deployed in the CMS dashboard.`);
+    else console.warn(`\nCould not mark revision ${revision} as deployed (${res.status}) — the dashboard may still show it as waiting.`);
+  } catch (e) {
+    console.warn(`\nCould not reach the dev server to report deploy status: ${e instanceof Error ? e.message : e}`);
+  }
+} else if (revision > 0) {
+  console.warn('\nCMS_PIPELINE_TOKEN not found (checked env and .dev.vars) — skipped marking the revision as deployed.');
+}
+
 await db.close();

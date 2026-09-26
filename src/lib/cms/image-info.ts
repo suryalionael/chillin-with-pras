@@ -112,6 +112,22 @@ function parseGif(b: Uint8Array): ImageInfo {
   return { width, height, mime: 'image/gif' };
 }
 
+/** File extension for a detected/declared image MIME type. */
+export function extensionForMime(mime: string): string {
+  switch (mime) {
+    case 'image/jpeg':
+      return 'jpg';
+    case 'image/png':
+      return 'png';
+    case 'image/webp':
+      return 'webp';
+    case 'image/gif':
+      return 'gif';
+    default:
+      return 'bin';
+  }
+}
+
 /** Reads a decodable image's real dimensions + detected MIME, or throws. */
 export function readImageInfo(bytes: Uint8Array): ImageInfo {
   if (!bytes || bytes.length < 13) throw new Error('file too small to be an image');

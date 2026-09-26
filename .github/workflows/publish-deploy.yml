@@ -1,41 +1,25 @@
 name: publish-deploy
 
-# Two entry points:
+# On-demand CI validation: builds from a checked-in snapshot fixture and runs
+# the full test/typecheck/build/QA pipeline. No Cloudflare deploy, no live
+# snapshot fetch, no secrets required.
 #
-# 1. CI DRY RUN (safe, default)
-#    workflow_dispatch → builds from a checked-in snapshot fixture, runs the full
-#    test/typecheck/QA pipeline, uploads dist/ as an artifact. NO Cloudflare
-#    deploy, NO production snapshot fetch, NO status callbacks.
-#
-# 2. PRODUCTION (requires configured secrets — not yet present)
-#    repository_dispatch (event_type cms-publish) fires from the CMS publish
-#    endpoint. Fetches the live published-content snapshot from the Worker,
-#    builds, deploys via wrangler, and reports status back.
-#
-# The deploy job is guarded so it can only run on repository_dispatch, and the
-# production steps all fail if the required secrets are unset.
+# The actual public site does not deploy through CI at all — publishing a
+# story only records that a revision is waiting; shipping it is a deliberate
+# local step (`npm run cms:publish-pages`, then commit + push `.cms/` on
+# main), which GitHub Pages then builds and serves via deploy-pages.yml.
 
 on:
-  repository_dispatch:
-    types: [cms-publish]
-  workflow_dispatch:
-    inputs:
-      ci_only:
-        description: 'Dry-run mode (never deploy)'
-        type: boolean
-        default: true
+  workflow_dispatch: {}
 
 permissions:
   contents: read
 
 env:
-  CI_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' }}
   CI_NODE_VERSION: '22'
 
 jobs:
-  # ---------------- CI DRY RUN (validates the builder remotely) ----------------
   ci-dry-run:
-    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -86,7 +70,7 @@ jobs:
       - name: CI DRY RUN COMPLETE
         run: |
           echo "=============================================="
-          echo "CI DRY RUN COMPLETE — NO CLOUDFLARE DEPLOYMENT PERFORMED"
+          echo "CI DRY RUN COMPLETE"
           echo "=============================================="
 
       - name: Job summary
@@ -100,69 +84,4 @@ jobs:
             echo "- build: ran (CMS_SNAPSHOT_FILE fixture)"
             echo "- QA: ran"
             echo "- artifact: \`cms-publish-ci-dry-run\` (dist/)"
-            echo "- **Cloudflare deployment: SKIPPED INTENTIONALLY**"
           } >> "$GITHUB_STEP_SUMMARY"
-
-  # ------------- PRODUCTION (secrets required — not yet configured) ------------
-  build-and-deploy:
-    if: github.event_name == 'repository_dispatch'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.CI_NODE_VERSION }}
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Fetch published-content snapshot
-        run: |
-          test -n "${{ secrets.CMS_PIPELINE_TOKEN }}" && test -n "${{ vars.CMS_SNAPSHOT_URL }}" \
-            || { echo "production pipeline secrets are not configured"; exit 1; }
-          mkdir -p .cms
-          curl -fsS \
-            -H "Authorization: Bearer ${{ secrets.CMS_PIPELINE_TOKEN }}" \
-            "${{ vars.CMS_SNAPSHOT_URL }}" \
-            -o .cms/snapshot.json
-          node -e "const s=require('./.cms/snapshot.json'); if(!Number.isInteger(s.revision)||!Array.isArray(s.stories)){console.error('invalid snapshot');process.exit(1)} console.log('snapshot revision', s.revision, '-', s.stories.length, 'stories')"
-
-      - name: Report build start
-        run: |
-          REV="$(node -p "require('./.cms/snapshot.json').revision")"
-          curl -fsS -X POST \
-            -H "Authorization: Bearer ${{ secrets.CMS_PIPELINE_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d "{\"revision\":$REV,\"status\":\"building\",\"buildId\":\"${{ github.run_id }}\"}" \
-            "${{ vars.CMS_STATUS_URL }}" || echo "warning: could not report build start"
-
-      - name: Build static site
-        run: CMS_SNAPSHOT_FILE=.cms/snapshot.json npm run build
-
-      - name: Deploy
-        run: npx wrangler deploy --config dist/server/wrangler.json
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-      - name: Report deployment success
-        if: success()
-        run: |
-          REV="$(node -p "require('./.cms/snapshot.json').revision")"
-          curl -fsS -X POST \
-            -H "Authorization: Bearer ${{ secrets.CMS_PIPELINE_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d "{\"revision\":$REV,\"status\":\"deployed\",\"buildId\":\"${{ github.run_id }}\"}" \
-            "${{ vars.CMS_STATUS_URL }}" || echo "warning: could not report deployment success"
-
-      - name: Report deployment failure
-        if: failure()
-        run: |
-          REV="$(node -p "require('./.cms/snapshot.json').revision" 2>/dev/null || echo 0)"
-          curl -fsS -X POST \
-            -H "Authorization: Bearer ${{ secrets.CMS_PIPELINE_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d "{\"revision\":$REV,\"status\":\"failed\",\"buildId\":\"${{ github.run_id }}\",\"error\":\"build or deploy failed (run ${{ github.run_id }})\"}" \
-            "${{ vars.CMS_STATUS_URL }}" || echo "warning: could not report deployment failure"

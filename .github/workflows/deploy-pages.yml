@@ -2,14 +2,12 @@ name: deploy-pages
 
 # Builds the static Astro public site and deploys it to GitHub Pages.
 #
-# This is the TEMPORARY public hosting layer. The published CMS content comes
-# from the committed snapshot `.cms/snapshot.json` (written by
-# `npm run cms:publish-pages`), so Pages never needs D1/R2/Worker access and
-# never sees drafts.
+# This is the public hosting layer. The published CMS content comes from the
+# committed snapshot `.cms/snapshot.json` (written by `npm run cms:publish-pages`),
+# so Pages never needs D1/R2/Worker access and never sees drafts.
 #
-# The Cloudflare deployment path stays intact:
-#   deploy-pages              -> GitHub Pages   (NOW)
-#   publish-deploy (repository_dispatch) -> Cloudflare Worker (LATER)
+# The CMS admin itself (D1 + R2 + the writing surface) still runs on its own
+# Cloudflare Worker — only the public-facing site deploys here.
 
 on:
   push:

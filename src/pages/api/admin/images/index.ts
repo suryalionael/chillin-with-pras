@@ -3,7 +3,7 @@ import { adminEndpoint, json } from '../../../../lib/cms/api.ts';
 import { insertImage, type ImageRecord } from '../../../../lib/cms/db.ts';
 import type { D1Like } from '../../../../lib/cms/db.ts';
 import { jsonError } from '../../../../lib/cms/guard.ts';
-import { readImageInfo } from '../../../../lib/cms/image-info.ts';
+import { readImageInfo, extensionForMime } from '../../../../lib/cms/image-info.ts';
 
 export const prerender = false;
 
@@ -13,21 +13,6 @@ const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] as 
 async function sha256Hex(buffer: ArrayBuffer): Promise<string> {
   const hash = await crypto.subtle.digest('SHA-256', buffer);
   return [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-function getExtension(mime: string): string {
-  switch (mime) {
-    case 'image/jpeg':
-      return 'jpg';
-    case 'image/png':
-      return 'png';
-    case 'image/webp':
-      return 'webp';
-    case 'image/gif':
-      return 'gif';
-    default:
-      return 'bin';
-  }
 }
 
 /**
@@ -100,7 +85,7 @@ export async function handleImageUpload(call: { db: D1Like; media: MediaLike; re
   }
 
   const id = crypto.randomUUID();
-  const ext = getExtension(format);
+  const ext = extensionForMime(format);
   const r2Key = `images/${id}.${ext}`;
 
   // Upload to R2

@@ -8,7 +8,7 @@ interface Props {
 const { summary } = Astro.props;
 
 const stateLabel: Record<Deployment['status'], string> = {
-  deploy_requested: 'Deployment requested — not yet started',
+  deploy_requested: 'Not deployed — GitHub publishing is not configured',
   building: 'Building',
   deployed: 'Deployed',
   failed: 'Deployment failed',
@@ -55,8 +55,10 @@ const fmt = (iso: string | null) =>
   </ul>
 
   <p class="deploy__note">
-    Publishing updates the CMS only; a deploy builds the static site from the published snapshot. A trigger or build
-    failure never undoes a publish.
+    Publishing ships automatically: it commits the snapshot straight to <code>main</code>, which GitHub Pages then
+    builds and deploys. A failed deploy never undoes the publish — the CMS stays authoritative, and the next publish
+    tries again. If a revision shows as not configured, set the <code>GITHUB_TOKEN</code> / <code>GITHUB_REPO</code>
+    Worker secrets, or ship it by hand with <code>npm run cms:publish-pages</code>.
   </p>
 </section>
 
@@ -126,5 +128,12 @@ const fmt = (iso: string | null) =>
     color: var(--ink-soft);
     font-size: 0.95rem;
     line-height: 1.6;
+  }
+  .deploy__note code {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 0.9em;
+    background: var(--paper-deep, rgba(0, 0, 0, 0.05));
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
   }
 </style>

@@ -1,11 +1,13 @@
 import { useCallback, useRef, useEffect } from 'react';
 import type { StoryDocument } from '../../lib/cms/schema.ts';
 
+type SaveResult = { draftRev: number; draftUpdatedAt: string } | null;
+
 interface UseAutosaveOptions {
   storyId: string;
   getDoc: () => StoryDocument;
   getRev: () => number;
-  onSave: (doc: StoryDocument, baseRev: number) => Promise<{ draftRev: number; draftUpdatedAt: string } | null>;
+  onSave: (doc: StoryDocument, baseRev: number) => Promise<SaveResult>;
   onConflict: (currentRev: number) => void;
   onError: (message: string) => void;
   debounceMs?: number;
@@ -20,7 +22,7 @@ export function useAutosave({
   onError,
   debounceMs = 1500,
 }: UseAutosaveOptions) {
-  const timeoutRef = useRef<number>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const pendingRef = useRef(false);
   const lastSavedDocRef = useRef<string>('');
   const lastSavedRevRef = useRef<number>(getRev());
@@ -38,15 +40,9 @@ export function useAutosave({
     return current !== lastSavedDocRef.current;
   }, []);
 
-  const saveNow = useCallback(async (immediate = false) => {
+  const saveNow = useCallback(async (immediate = false): Promise<SaveResult> => {
     const { getDoc, getRev, onSave, onConflict, onError } = callbacksRef.current;
     if (!hasChanges() && !immediate) return null;
-
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = undefined;
-    }
-
     if (pendingRef.current && !immediate) return null;
 
     const doc = getDoc();
@@ -65,8 +61,8 @@ export function useAutosave({
     } catch (err) {
       pendingRef.current = false;
       if (err instanceof Response && err.status === 409) {
-        const data = await err.json();
-        onConflict(data.error.currentRev);
+        const data = (await err.json()) as { error?: { currentRev?: number } };
+        onConflict(data.error?.currentRev ?? getRev());
       } else {
         onError(err instanceof Error ? err.message : 'Save failed');
       }
@@ -80,11 +76,25 @@ export function useAutosave({
     };
   }, []);
 
-  const triggerSave = useCallback(() => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = window.setTimeout(() => {
-      void saveNow();
-    }, debounceMs);
+  /**
+   * `immediate=false` (the default, e.g. on every keystroke): debounces and
+   * resolves once that debounced save finishes.
+   * `immediate=true` (Save button, conflict resolution): cancels any pending
+   * debounce and flushes right away, bypassing the hasChanges() guard so a
+   * forced save always reaches the server before the caller proceeds.
+   */
+  const saveWithDebounce = useCallback((immediate = false): Promise<SaveResult> => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = undefined;
+    }
+    if (immediate) return saveNow(true);
+    return new Promise((resolve) => {
+      timeoutRef.current = setTimeout(() => {
+        timeoutRef.current = undefined;
+        void saveNow().then(resolve);
+      }, debounceMs);
+    });
   }, [saveNow, debounceMs]);
 
   const cancelSave = useCallback(() => {
@@ -94,5 +104,5 @@ export function useAutosave({
     }
   }, []);
 
-  return { saveWithDebounce: triggerSave, cancelSave };
+  return { saveWithDebounce, cancelSave };
 }

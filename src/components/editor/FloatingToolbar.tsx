@@ -5,14 +5,14 @@ export function FloatingToolbar({ editor }: { editor: ReturnType<typeof useEdito
   const [visible, setVisible] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const toolbarRef = useRef<HTMLDivElement>(null);
-  const hideTimeoutRef = useRef<number>();
+  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const updatePosition = useCallback(() => {
     if (!editor || !editor.view) return;
 
     const { state } = editor;
     const { selection } = state;
-    const { from, to, empty } = selection;
+    const { from, empty } = selection;
 
     if (empty) {
       setVisible(false);
@@ -47,30 +47,33 @@ export function FloatingToolbar({ editor }: { editor: ReturnType<typeof useEdito
       updatePosition();
     };
 
+    const handleBlur = () => {
+      hideTimeoutRef.current = setTimeout(() => setVisible(false), 150);
+    };
+
     editor.on('selectionUpdate', handleSelectionUpdate);
-    editor.on('blur', () => {
-      hideTimeoutRef.current = window.setTimeout(() => setVisible(false), 150);
-    });
+    editor.on('blur', handleBlur);
     editor.on('focus', updatePosition);
 
     return () => {
       editor.off('selectionUpdate', handleSelectionUpdate);
-      editor.off('blur', () => {});
+      editor.off('blur', handleBlur);
       editor.off('focus', updatePosition);
       if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
     };
   }, [editor, updatePosition]);
 
-  const handleFormat = (format: string) => {
+  const handleFormat = (format: 'toggleBold' | 'toggleItalic') => {
     if (!editor) return;
-    editor.chain().focus()[format]().run();
+    if (format === 'toggleBold') editor.chain().focus().toggleBold().run();
+    else editor.chain().focus().toggleItalic().run();
   };
 
   const handleLink = () => {
     if (!editor) return;
     const { state } = editor;
     const { selection } = state;
-    const { from, to, empty } = selection;
+    const { empty } = selection;
 
     if (empty) return;
 
@@ -81,8 +84,6 @@ export function FloatingToolbar({ editor }: { editor: ReturnType<typeof useEdito
   };
 
   const hasLink = editor?.isActive('link');
-  const linkAttrs = editor?.getAttributes('link');
-  const currentUrl = linkAttrs?.href;
 
   const handleHeading = (level: 2 | 3) => {
     if (!editor) return;
@@ -100,8 +101,6 @@ export function FloatingToolbar({ editor }: { editor: ReturnType<typeof useEdito
 
   if (!visible || !editor) return null;
 
-  const marks = editor.state.selection.$from.marks();
-  const canFormat = marks.some((m) => ['bold', 'italic', 'link'].includes(m.type.name)) || editor.can().setBold() || editor.can().setItalic();
   const canHeading = editor.can().toggleHeading({ level: 2 }) || editor.can().toggleHeading({ level: 3 });
   const canQuote = editor.can().toggleBlockquote();
 
