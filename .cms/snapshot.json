@@ -1,5 +1,53 @@
 {
-  "revision": 3,
-  "generatedAt": "2026-09-23T22:09:58.280Z",
-  "stories": []
+  "revision": 6,
+  "generatedAt": "2026-09-26T14:22:40.260Z",
+  "stories": [
+    {
+      "id": "50b2296a-194f-481f-95ba-89c879b801a9",
+      "section": "observe",
+      "slug": "pat-johnson",
+      "publishedAt": "2026-09-26",
+      "pubUpdatedAt": "2026-09-26T14:22:40.086Z",
+      "document": {
+        "version": 1,
+        "title": "Pat Johnson",
+        "subtitle": "This is Pat Johsnon",
+        "dateline": "",
+        "featuredImageId": null,
+        "body": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "image",
+              "attrs": {
+                "imageId": "39327b60-cc3b-4406-b063-fac6ebdf94e3",
+                "alt": "792910081_18038266004833260_2335095058713852050_n",
+                "caption": "This is Pat Johsnon",
+                "decorative": false,
+                "size": "wide"
+              }
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Hi everyone, this is pat. "
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Aecon Group Inc. (TSX: ARE) is a North American construction and infrastructure development company with global experience. Aecon delivers integrated solutions to private and public-sector clients through its Construction segment in the Civil, Urban Transportation, Nuclear, Utility and Industrial sectors, and provides project development, financing, investment, management, and operations and maintenance services through its Concessions segment."
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
 }
