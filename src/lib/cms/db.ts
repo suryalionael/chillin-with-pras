@@ -406,6 +406,21 @@ export interface ImageRecord {
   filename: string;
 }
 
+export interface ImageExportMeta {
+  r2Original: string;
+  mime: string;
+  filename: string;
+}
+
+/** The R2 key + mime an image needs to be re-served from elsewhere (e.g. exported for GitHub Pages). */
+export async function getImageExportMeta(db: D1Like, id: string): Promise<ImageExportMeta | null> {
+  const row = await db
+    .prepare('SELECT r2_original, mime, filename FROM images WHERE id = ?')
+    .bind(id)
+    .first<{ r2_original: string; mime: string; filename: string }>();
+  return row ? { r2Original: row.r2_original, mime: row.mime, filename: row.filename } : null;
+}
+
 export async function insertImage(db: D1Like, img: Omit<ImageRecord, 'id'> & { id?: string }, deps?: Partial<Deps>): Promise<string> {
   const d = withDeps(deps);
   const id = img.id ?? d.newId();

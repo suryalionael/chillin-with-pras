@@ -27,7 +27,16 @@
     // Cloudflare Access (pending configuration): e.g. "yourteam.cloudflareaccess.com"
     "ACCESS_TEAM_DOMAIN": "",
     // Application Audience (AUD) tag of the Access application (pending configuration)
-    "ACCESS_AUD": ""
+    "ACCESS_AUD": "",
+    // Declared here only so `wrangler types` includes it in Env — the real value
+    // is set locally in `.dev.vars` (git-ignored) and always empty in production.
+    // middleware.ts also gates this behind import.meta.env.DEV, so it is inert
+    // outside local dev regardless of this value.
+    "DEV_ADMIN_BYPASS": "",
+    // Repo publishing ships to, as "owner/repo" — not a secret, just config.
+    // The actual credential (GITHUB_TOKEN, a fine-grained PAT scoped to this
+    // repo's Contents: Read and write) goes in `wrangler secret put GITHUB_TOKEN`.
+    "GITHUB_REPO": "suryalionael/chillin-with-pras"
   },
 
   "d1_databases": [

@@ -13,6 +13,7 @@
     "src/lib/content/**/*",
     "src/layouts/AdminLayout.astro",
     "src/components/admin/**/*",
+    "src/components/editor/**/*",
     "src/pages/admin/**/*",
     "src/pages/api/**/*"
   ],

@@ -1,5 +1,5 @@
 import { StoryEditor } from './StoryEditor.tsx';
-import type { StoryDocument } from '../../../lib/cms/schema.ts';
+import type { StoryDocument } from '../../lib/cms/schema.ts';
 import { useState, useCallback, useEffect } from 'react';
 
 interface EditorWrapperProps {
@@ -12,15 +12,9 @@ type SaveOutcome = { draftRev: number; draftUpdatedAt: string };
 
 export function EditorWrapper({ storyId, initialDoc, initialRev }: EditorWrapperProps) {
   const [doc, setDoc] = useState<StoryDocument>(JSON.parse(initialDoc));
-  const [rev, setRev] = useState(initialRev);
-  const [title, setTitle] = useState('');
-  const [subtitle, setSubtitle] = useState('');
 
   useEffect(() => {
-    const parsed = JSON.parse(initialDoc);
-    setDoc(parsed);
-    setTitle(parsed.title);
-    setSubtitle(parsed.subtitle);
+    setDoc(JSON.parse(initialDoc));
   }, [initialDoc]);
 
   const handleSave = useCallback(
@@ -32,27 +26,25 @@ export function EditorWrapper({ storyId, initialDoc, initialRev }: EditorWrapper
         credentials: 'same-origin',
       });
       if (!res.ok) throw res;
-      const data = await res.json();
+      const data = (await res.json()) as SaveOutcome;
       return { draftRev: data.draftRev, draftUpdatedAt: data.draftUpdatedAt };
     },
     [storyId],
   );
 
   const handleTitleChange = useCallback((newTitle: string) => {
-    setTitle(newTitle);
-    setDoc(prev => ({ ...prev, title: newTitle }));
+    setDoc((prev: StoryDocument) => ({ ...prev, title: newTitle }));
   }, []);
 
   const handleSubtitleChange = useCallback((newSubtitle: string) => {
-    setSubtitle(newSubtitle);
-    setDoc(prev => ({ ...prev, subtitle: newSubtitle }));
+    setDoc((prev: StoryDocument) => ({ ...prev, subtitle: newSubtitle }));
   }, []);
 
   return (
     <StoryEditor
       storyId={storyId}
       initialDoc={doc}
-      initialRev={rev}
+      initialRev={initialRev}
       onSave={handleSave}
       onTitleChange={handleTitleChange}
       onSubtitleChange={handleSubtitleChange}

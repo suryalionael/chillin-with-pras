@@ -1,7 +1,14 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import { docToBlocks } from '../../lib/preview-blocks.ts';
+import type { ArticleBlock, ParagraphBlock } from '../../lib/preview-blocks.ts';
 import type { StoryDocument } from '../../lib/cms/schema.ts';
+
+/** Narrows a block to a paragraph for tests that assert on its `inline` field. */
+function asParagraph(block: ArticleBlock): ParagraphBlock {
+  assert.strictEqual(block.type, 'p');
+  return block as ParagraphBlock;
+}
 
 describe('editor document serialization', () => {
   const baseDoc: StoryDocument = {
@@ -46,9 +53,10 @@ describe('editor document serialization', () => {
       },
     };
     const blocks = docToBlocks(doc);
-    assert.ok(blocks[0].inline);
-    assert.deepStrictEqual(blocks[0].inline![0], { text: 'Bold ', bold: true });
-    assert.deepStrictEqual(blocks[0].inline![1], { text: 'italic', italic: true });
+    const p = asParagraph(blocks[0]);
+    assert.ok(p.inline);
+    assert.deepStrictEqual(p.inline![0], { text: 'Bold ', bold: true });
+    assert.deepStrictEqual(p.inline![1], { text: 'italic', italic: true });
   });
 
   it('serializes links', () => {
@@ -67,7 +75,7 @@ describe('editor document serialization', () => {
       },
     };
     const blocks = docToBlocks(doc);
-    assert.deepStrictEqual(blocks[0].inline![0], { text: 'Link', href: 'https://example.com' });
+    assert.deepStrictEqual(asParagraph(blocks[0]).inline![0], { text: 'Link', href: 'https://example.com' });
   });
 
   it('serializes headings level 2 as subhead paragraphs', () => {
@@ -288,8 +296,9 @@ describe('editor document serialization', () => {
       },
     };
     const blocks = docToBlocks(doc);
-    assert.ok(blocks[0].inline);
-    const inline = blocks[0].inline!;
-    assert.ok(inline.some((i) => 'br' in i));
+    const p = asParagraph(blocks[0]);
+    assert.ok(p.inline);
+    const inline = p.inline!;
+    assert.ok(inline.some((i: (typeof inline)[number]) => 'br' in i));
   });
 });

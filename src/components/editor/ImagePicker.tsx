@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 
-interface ImageRecord {
+export interface ImageRecord {
   id: string;
   r2_original: string;
   variants: unknown[];
@@ -13,14 +13,23 @@ interface ImageRecord {
   created_at: string;
 }
 
+export type PickedImage = { id: string; filename: string };
+type UploadedImage = ImageRecord | { id: string; duplicate: true };
+interface ImagesListResponse {
+  images?: ImageRecord[];
+}
+interface UploadResponse {
+  image?: UploadedImage;
+  error?: { message?: string };
+}
+
 interface ImagePickerProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (image: ImageRecord) => void;
-  onUpload: (file: File) => Promise<ImageRecord | null>;
+  onSelect: (image: PickedImage) => void;
 }
 
-export function ImagePicker({ isOpen, onClose, onSelect, onUpload }: ImagePickerProps) {
+export function ImagePicker({ isOpen, onClose, onSelect }: ImagePickerProps) {
   const [images, setImages] = useState<ImageRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +41,7 @@ export function ImagePicker({ isOpen, onClose, onSelect, onUpload }: ImagePicker
     try {
       const res = await fetch('/api/admin/images/', { credentials: 'same-origin' });
       if (!res.ok) throw new Error('Failed to load images');
-      const data = await res.json();
+      const data = (await res.json()) as ImagesListResponse;
       if (data.images) setImages(data.images);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load images');
@@ -47,6 +56,8 @@ export function ImagePicker({ isOpen, onClose, onSelect, onUpload }: ImagePicker
     }
   }, [isOpen, tab, fetchImages]);
 
+  // Matches Medium: dropping/picking a file uploads it and inserts it into the
+  // story immediately — there's no separate "now go find it in the library" step.
   const handleFileUpload = async (file: File) => {
     setUploading(true);
     setError(null);
@@ -58,19 +69,17 @@ export function ImagePicker({ isOpen, onClose, onSelect, onUpload }: ImagePicker
         body: formData,
         credentials: 'same-origin',
       });
-      if (!res.ok) {
-        const data = await res.json();
+      const data = (await res.json()) as UploadResponse;
+      if (!res.ok || !data.image) {
         throw new Error(data.error?.message || 'Upload failed');
       }
-      const data = await res.json();
-      if (data.image && !data.image.duplicate) {
-        setImages((prev) => [data.image, ...prev]);
+      if (!('duplicate' in data.image)) {
+        setImages((prev) => [data.image as ImageRecord, ...prev]);
       }
-      onUpload(file);
-      return data.image;
+      onSelect({ id: data.image.id, filename: file.name });
+      onClose();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Upload failed');
-      return null;
     } finally {
       setUploading(false);
     }

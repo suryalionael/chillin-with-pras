@@ -1,5 +1,5 @@
 import { PreviewRenderer } from './PreviewRenderer.tsx';
-import { type StoryDocument } from '../../../lib/cms/schema.ts';
+import { type StoryDocument } from '../../lib/cms/schema.ts';
 import { useState, useEffect } from 'react';
 
 interface PreviewWrapperProps {
@@ -7,7 +7,7 @@ interface PreviewWrapperProps {
   storyId: string;
 }
 
-export function PreviewWrapper({ initialDoc, storyId }: PreviewWrapperProps) {
+export function PreviewWrapper({ initialDoc }: PreviewWrapperProps) {
   const [doc, setDoc] = useState<StoryDocument>(JSON.parse(initialDoc));
 
   useEffect(() => {
