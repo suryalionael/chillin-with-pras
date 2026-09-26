@@ -8,20 +8,18 @@
    ================================================================ */
 
 .editor-shell {
+  /* Georgia stands in for Medium's licence face so the surface *types* like a
+   * story, not a form — everything else (paper, ink, line, accent) is the
+   * site's own palette from global.css, inherited on purpose: this is not a
+   * separate app skin, it's the same archive with a writing desk in it. */
   --serif: Georgia, 'Charter', 'Times New Roman', serif;
-  --ink: #242424;
-  --ink-soft: #757575;
-  --ink-faint: #adadad;
-  --line: #e6e6e6;
-  --line-strong: #d5d5d5;
-  --accent-warm: #157a15;
-  --paper: #ffffff;
-  --paper-deep: #f2f2f2;
+  --accent-warm-dark: color-mix(in srgb, var(--accent-warm) 82%, black);
+  --selection-tint: color-mix(in srgb, var(--accent-warm) 25%, var(--paper));
 
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: #ffffff;
+  background: var(--paper);
 }
 
 /* Header — one quiet bar: back · status · publish */
@@ -32,7 +30,7 @@
   gap: 1rem;
   padding: 0 1.75rem;
   border-bottom: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.92);
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   position: sticky;
@@ -128,7 +126,7 @@
 }
 
 .editor-header .admin-btn:hover {
-  background: #0f5c0f;
+  background: var(--accent-warm-dark);
 }
 
 .editor-header .admin-btn[disabled],
@@ -161,7 +159,7 @@
 /* Publish/deployment note */
 .editor-publish-note {
   padding: 0.85rem 1.75rem;
-  background: #f6f6f6;
+  background: var(--paper-deep);
   border-bottom: 1px solid var(--line);
   font-family: var(--sans);
   font-size: 0.95rem;
@@ -288,7 +286,7 @@
 .prose-editor blockquote {
   margin: 2rem 0;
   padding-left: 1.25rem;
-  border-left: 2px solid #dcdcdc;
+  border-left: 2px solid var(--line-strong);
   font-style: italic;
   color: var(--ink);
 }
@@ -326,14 +324,14 @@
 }
 
 .prose-editor a {
-  color: #1a8917;
+  color: var(--accent-warm);
   text-decoration: underline;
   text-underline-offset: 3px;
   text-underline-thickness: 1px;
 }
 
 .prose-editor a:hover {
-  color: #117a0f;
+  color: var(--accent-warm-dark);
 }
 
 /* Image nodes */
@@ -352,12 +350,19 @@
 
 .editor-image__wrapper {
   position: relative;
-  background: #f7f7f7;
+  background: var(--paper-deep);
   border-radius: 2px;
-  aspect-ratio: 16 / 9;
+  min-height: 3rem;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+}
+
+.editor-image__img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 2px;
 }
 
 .editor-image__placeholder {
@@ -365,39 +370,82 @@
   font-family: var(--sans);
   font-size: 1rem;
   color: var(--ink-soft);
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.45));
-  border-radius: 0 0 2px 2px;
+  border-radius: 2px;
+  text-align: center;
 }
 
 .editor-image__caption {
+  display: block;
+  width: 100%;
   font-family: var(--serif);
   font-style: italic;
   font-size: 1.05rem;
   line-height: 1.5;
   color: var(--ink-soft);
-  padding: 0.9rem 1.5rem 0;
+  padding: 0.9rem 0 0;
   margin: 0;
 }
 
-/* Embed placeholder */
+.editor-image__caption--input {
+  border: 0;
+  background: transparent;
+  resize: none;
+  overflow: hidden;
+  text-align: center;
+}
+
+.editor-image__caption--input::placeholder {
+  color: var(--ink-faint);
+  font-style: normal;
+}
+
+.editor-image__caption--input:focus {
+  outline: none;
+}
+
+/* Embed — an inline URL field until a recognized link turns it into a live preview */
 .editor-embed {
   margin: 2.5rem auto;
-  padding: 2rem;
   max-width: 44rem;
-  background: #f7f7f7;
+}
+
+.editor-embed__input {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  background: var(--paper-deep);
   border: 1px dashed var(--line-strong);
-  border-radius: 2px;
+  border-radius: 6px;
   text-align: center;
   font-family: var(--sans);
   font-size: 1rem;
-  color: var(--ink-soft);
+  color: var(--ink);
 }
 
-.editor-embed__placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
+.editor-embed__input::placeholder {
+  color: var(--ink-faint);
+}
+
+.editor-embed__input:focus {
+  outline: none;
+  border-color: var(--accent-warm);
+  border-style: solid;
+}
+
+.editor-embed__frame {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%;
+  background: #000;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.editor-embed__frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
 }
 
 /* Floating toolbar — small pill that appears above a selection */
@@ -406,7 +454,7 @@
   display: inline-flex;
   gap: 2px;
   padding: 4px;
-  background: #ffffff;
+  background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 999px;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.14);
@@ -434,11 +482,11 @@
 }
 
 .toolbar-btn:hover {
-  background: #f0f0f0;
+  background: var(--paper-deep);
 }
 
 .toolbar-btn.active {
-  background: #e8e8e8;
+  background: color-mix(in srgb, var(--ink) 12%, var(--paper));
 }
 
 .toolbar-btn:focus-visible {
@@ -457,13 +505,44 @@
   font-size: 1rem;
 }
 
+/* Insert "+" — a small circle that fades in to the left of the hovered
+   paragraph, exactly like Medium's insert affordance */
+.editor-insert-plus {
+  position: fixed;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--ink-soft);
+  cursor: pointer;
+  padding: 0;
+  z-index: 55;
+  animation: toolbar-appear 0.12s var(--ease-out);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  transition: color 0.12s var(--ease-out), border-color 0.12s var(--ease-out);
+}
+
+.editor-insert-plus:hover {
+  border-color: var(--accent-warm);
+  color: var(--accent-warm);
+}
+
+.editor-insert-plus:focus-visible {
+  outline: 2px solid var(--accent-warm);
+  outline-offset: 2px;
+}
+
 /* Slash / insert menu */
 .slash-menu {
   position: fixed;
   min-width: 220px;
   max-height: 320px;
   overflow-y: auto;
-  background: #ffffff;
+  background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: 0 10px 32px rgba(0, 0, 0, 0.16);
@@ -491,7 +570,7 @@
 
 .slash-menu__item.selected,
 .slash-menu__item:hover {
-  background: #f2f2f2;
+  background: var(--paper-deep);
 }
 
 .slash-menu__item:focus-visible {
@@ -515,7 +594,7 @@
 
 /* Selection */
 .prose-editor ::selection {
-  background: #cdeacd;
+  background: var(--selection-tint);
   color: var(--ink);
 }
 
@@ -548,7 +627,7 @@
   width: 100%;
   max-width: 56rem;
   max-height: 80vh;
-  background: #ffffff;
+  background: var(--paper);
   border-radius: 12px;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.24);
   display: flex;
@@ -592,7 +671,7 @@
 }
 
 .image-picker__close:hover {
-  background: #f0f0f0;
+  background: var(--paper-deep);
   color: var(--ink);
 }
 
@@ -664,7 +743,7 @@
 
 .image-picker__dropzone:hover {
   border-color: var(--accent-warm);
-  background: #f5faf5;
+  background: color-mix(in srgb, var(--accent-warm) 8%, var(--paper));
 }
 
 .image-picker__file-input {
@@ -737,7 +816,7 @@
   border: 2px solid transparent;
   border-radius: 8px;
   overflow: hidden;
-  background: #f5f5f5;
+  background: var(--paper-deep);
   cursor: pointer;
   transition: border-color 0.15s var(--ease-out), transform 0.15s var(--ease-out);
 }
@@ -779,7 +858,7 @@
   max-width: none;
   margin: 0;
   padding: 0;
-  background: #ffffff;
+  background: var(--paper);
   min-height: 100vh;
 }
 
