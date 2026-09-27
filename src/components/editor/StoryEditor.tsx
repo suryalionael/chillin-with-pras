@@ -420,10 +420,16 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
       setStatus('saved');
       setError(null);
       const build = data.build;
-      if (build?.status === 'deployed') setPublishNote(null);
-      else if (build?.status === 'failed') setPublishNote(`Published, but shipping it to the live site failed: ${build.error}. It will retry on the next publish.`);
-      else if (build?.requested) setPublishNote(`Published (revision ${build.revision ?? '—'}). Deployment is not configured yet, so it has not gone live.`);
-      else setPublishNote(null);
+      if (build?.status === 'deployed') {
+        setPublishNote('Published! It should be live on the site in a couple of minutes.');
+        setTimeout(() => setPublishNote(null), 6000);
+      } else if (build?.status === 'failed') {
+        setPublishNote("Published, but something went wrong putting it live. Try publishing again in a moment.");
+      } else if (build?.requested) {
+        setPublishNote('Published, but publishing to the live site isn’t set up yet.');
+      } else {
+        setPublishNote(null);
+      }
       setTimeout(() => setStatus('idle'), 2000);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Publish failed');

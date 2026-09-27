@@ -1,17 +1,14 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
-import StoryList from '../../components/admin/StoryList.astro';
-import DeploymentStatus from '../../components/admin/DeploymentStatus.astro';
+import StoryGallery from '../../components/admin/StoryGallery.astro';
 import { getEnv } from '../../lib/cms/runtime.ts';
 import { listStories, type D1Like, type StorySummary } from '../../lib/cms/db.ts';
-import { deploymentSummary } from '../../lib/cms/deploy.ts';
 
 // Server-rendered on every request; never part of the static build.
 export const prerender = false;
 
 let drafts: StorySummary[] = [];
 let published: StorySummary[] = [];
-let deploy: Awaited<ReturnType<typeof deploymentSummary>> | null = null;
 let loadError: string | null = null;
 try {
   const env = await getEnv();
@@ -21,7 +18,6 @@ try {
   published = all
     .filter((s) => s.status === 'published')
     .sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''));
-  deploy = await deploymentSummary(db);
 } catch (error) {
   console.error('admin dashboard: could not load stories', error instanceof Error ? error.message : error);
   loadError = import.meta.env.DEV
@@ -34,7 +30,7 @@ try {
   <header class="dash-head">
     <div>
       <p class="admin-kicker">Chillin’ with Pras</p>
-      <h1 class="dash-title">Admin</h1>
+      <h1 class="dash-title">Your stories</h1>
     </div>
     <a class="admin-btn" href="/admin/stories/new/"><span aria-hidden="true">+</span> New Story</a>
   </header>
@@ -43,15 +39,13 @@ try {
 
   <section class="dash-section" aria-labelledby="drafts-h">
     <h2 id="drafts-h" class="dash-h">Drafts <span class="dash-count">{drafts.length}</span></h2>
-    <StoryList stories={drafts} kind="draft" emptyText="No drafts yet. Start with a new story." />
+    <StoryGallery stories={drafts} kind="draft" emptyText="No drafts yet. Start with a new story." />
   </section>
 
   <section class="dash-section" aria-labelledby="published-h">
     <h2 id="published-h" class="dash-h">Published <span class="dash-count">{published.length}</span></h2>
-    <StoryList stories={published} kind="published" emptyText="Nothing published from here yet. The 35 original stories live in the site itself and are not listed." />
+    <StoryGallery stories={published} kind="published" emptyText="Nothing published from here yet." />
   </section>
-
-  {deploy && <DeploymentStatus summary={deploy} />}
 </AdminLayout>
 
 <style>
@@ -77,7 +71,7 @@ try {
     display: flex;
     align-items: baseline;
     gap: 0.75rem;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
     font-family: var(--serif);
     font-weight: 500;
     font-size: 2.1rem;

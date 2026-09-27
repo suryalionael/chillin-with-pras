@@ -47,7 +47,7 @@ function PreviewSubheading({ block }: { block: SubheadingBlock }) {
 }
 
 function PreviewImage({ block }: { block: CmsImageBlock }) {
-  const imageUrl = `/images/${block.imageId}`;
+  const imageUrl = `/images/${block.imageId}/`;
   const tone = block.size === 'inset' ? 'inset-right' : 'wide';
   return (
     <div className="prose__figure">

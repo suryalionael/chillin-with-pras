@@ -46,7 +46,7 @@ export const Image = Node.create<ImageOptions>({
       [
         'div',
         { class: 'editor-image__wrapper' },
-        imageId ? ['img', { class: 'editor-image__img', src: `/images/${imageId}`, alt: decorative ? '' : alt || '' }] : ['div', { class: 'editor-image__placeholder' }, '(select image)'],
+        imageId ? ['img', { class: 'editor-image__img', src: `/images/${imageId}/`, alt: decorative ? '' : alt || '' }] : ['div', { class: 'editor-image__placeholder' }, '(select image)'],
       ],
       caption ? ['figcaption', { class: 'editor-image__caption' }, caption] : null,
     ];
@@ -112,7 +112,7 @@ export const Image = Node.create<ImageOptions>({
         dom.className = `editor-image editor-image--${n.attrs.size}`;
         dom.setAttribute('data-image-id', n.attrs.imageId ?? '');
         dom.setAttribute('data-decorative', String(n.attrs.decorative));
-        img.src = n.attrs.imageId ? `/images/${n.attrs.imageId}` : '';
+        img.src = n.attrs.imageId ? `/images/${n.attrs.imageId}/` : '';
         img.alt = n.attrs.decorative ? '' : n.attrs.alt || '';
         if (document.activeElement !== caption) caption.value = n.attrs.caption || '';
       };

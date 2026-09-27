@@ -1,0 +1,51 @@
+---
+// Owner-only technical status: publish → GitHub → GitHub Pages pipeline
+// health. Deliberately not linked from anywhere in the admin nav or
+// dashboard — the writer-facing CMS should never mention revisions, commits,
+// or deploy pipelines. Reach this page directly at /admin/system/ when
+// something needs debugging.
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import DeploymentStatus from '../../../components/admin/DeploymentStatus.astro';
+import { getEnv } from '../../../lib/cms/runtime.ts';
+import type { D1Like } from '../../../lib/cms/db.ts';
+import { deploymentSummary } from '../../../lib/cms/deploy.ts';
+
+export const prerender = false;
+
+let deploy: Awaited<ReturnType<typeof deploymentSummary>> | null = null;
+let loadError: string | null = null;
+try {
+  const env = await getEnv();
+  const db = env.DB as unknown as D1Like;
+  deploy = await deploymentSummary(db);
+} catch (error) {
+  console.error('admin system status: could not load deployment summary', error instanceof Error ? error.message : error);
+  loadError = 'Could not load deployment status.';
+}
+---
+
+<AdminLayout title="System status">
+  <p class="admin-kicker"><a href="/admin/">← Stories</a></p>
+  <h1 class="sys-title">System status</h1>
+  <p class="sys-lede">Publish → GitHub → GitHub Pages pipeline health. Not part of the writing experience.</p>
+
+  {loadError && <p class="admin-notice" role="alert">{loadError}</p>}
+  {deploy && <DeploymentStatus summary={deploy} />}
+</AdminLayout>
+
+<style>
+  .sys-title {
+    margin-top: 1rem;
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(2.4rem, 6vw, 3.25rem);
+    line-height: 1.05;
+  }
+  .sys-lede {
+    margin-top: 0.75rem;
+    max-width: 36rem;
+    color: var(--ink-soft);
+    font-size: 1.05rem;
+    line-height: 1.6;
+  }
+</style>

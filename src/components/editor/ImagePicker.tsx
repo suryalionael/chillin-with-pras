@@ -189,7 +189,7 @@ export function ImagePicker({ isOpen, onClose, onSelect }: ImagePickerProps) {
                     }}
                   >
                     <img
-                      src={`/images/${img.id}`}
+                      src={`/images/${img.id}/`}
                       alt=""
                       loading="lazy"
                       className="image-picker__thumb"

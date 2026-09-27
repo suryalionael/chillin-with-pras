@@ -94,6 +94,8 @@ export interface StorySummary {
   slug: string | null;
   status: Status;
   title: string;
+  subtitle: string;
+  featuredImageId: string | null;
   draftRev: number;
   draftUpdatedAt: string;
   publishedAt: string | null;
@@ -168,13 +170,20 @@ export async function listStories(db: D1Like, filter: { status?: Status } = {}):
   const stmt = db.prepare(
     `SELECT id, section, slug, status,
             COALESCE(json_extract(draft_doc, '$.title'), '') AS title,
+            COALESCE(json_extract(draft_doc, '$.subtitle'), '') AS subtitle,
+            COALESCE(
+              json_extract(draft_doc, '$.featuredImageId'),
+              (SELECT json_extract(value, '$.attrs.imageId') FROM json_each(draft_doc, '$.body.content')
+                WHERE json_extract(value, '$.type') = 'image' LIMIT 1)
+            ) AS featured_image_id,
             draft_rev, draft_updated_at, published_at,
             (pub_doc IS NOT NULL AND pub_doc <> draft_doc) AS unpublished
        FROM stories ${where}
       ORDER BY draft_updated_at DESC, id`,
   );
   const { results } = await (filter.status ? stmt.bind(filter.status) : stmt).all<{
-    id: string; section: string; slug: string | null; status: string; title: string;
+    id: string; section: string; slug: string | null; status: string; title: string; subtitle: string;
+    featured_image_id: string | null;
     draft_rev: number; draft_updated_at: string; published_at: string | null; unpublished: number;
   }>();
   return results.map((r) => ({
@@ -183,6 +192,8 @@ export async function listStories(db: D1Like, filter: { status?: Status } = {}):
     slug: r.slug,
     status: r.status === 'published' ? 'published' : 'draft',
     title: r.title,
+    subtitle: r.subtitle,
+    featuredImageId: r.featured_image_id,
     draftRev: r.draft_rev,
     draftUpdatedAt: r.draft_updated_at,
     publishedAt: r.published_at,
