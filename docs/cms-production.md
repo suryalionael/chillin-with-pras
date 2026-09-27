@@ -310,7 +310,7 @@ story in `dist` during this audit).
 - [ ] Edit after publish → production still shows previous `pub_doc` until republish.
 - [ ] Slug collision with legacy story fails with a clear error.
 - [ ] Missing D1 during build → build fails loudly (or `CMS_BUILD_SKIP=1` builds legacy-only deliberately).
-- [ ] `curl -I https://www.chillinwithpras.com/images/{id}` → correct MIME + immutable cache headers.
+- [ ] `curl -I https://www.chillinwithpras.com/images/{id}/` → correct MIME + immutable cache headers (trailing slash required — `trailingSlash: 'always'`).
 - [ ] `curl -sI /admin/` → `cache-control: no-store`, `x-robots-tag noindex`.
 - [ ] Deploy hook: publishing triggers a fresh build; UI reflects triggered/result.
 

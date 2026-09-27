@@ -39,7 +39,7 @@ const canonicalUrl = `https://www.chillinwithpras.com${article.path}`;
 let og = 'https://www.chillinwithpras.com/og.jpg';
 const ogLead = article.blocks.find((b) => b.type === 'img');
 if (ogLead && ogLead.source === 'cms') {
-  og = `https://www.chillinwithpras.com/images/${ogLead.imageId}`;
+  og = `https://www.chillinwithpras.com/images/${ogLead.imageId}/`;
 } else {
   try {
     const file = ogLead && !ogLead.source ? ogLead.file : leadImage(article);

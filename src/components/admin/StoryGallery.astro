@@ -1,0 +1,221 @@
+---
+import type { StorySummary } from '../../lib/cms/db.ts';
+import { SECTION_LABEL, SECTION_PATH } from '../../lib/cms/sections.ts';
+
+interface Props {
+  stories: StorySummary[];
+  kind: 'draft' | 'published';
+  emptyText: string;
+}
+const { stories, kind, emptyText } = Astro.props;
+
+const dateOnly = (iso: string) => new Date(iso).toLocaleDateString('en-US', { dateStyle: 'medium', timeZone: 'UTC' });
+---
+
+{
+  stories.length === 0 ? (
+    <p class="story-empty">{emptyText}</p>
+  ) : (
+    <ul class="story-gallery">
+      {stories.map((s) => {
+        const title = s.title.trim();
+        const initial = (title || '?').charAt(0).toUpperCase();
+        return (
+          <li class="story-card">
+            <a class="story-card__link" href={`/admin/stories/${s.id}/edit/`}>
+              <div class="story-card__thumb">
+                {s.featuredImageId ? (
+                  <img src={`/images/${s.featuredImageId}/`} alt="" loading="lazy" />
+                ) : (
+                  <span class="story-card__initial" aria-hidden="true">{initial}</span>
+                )}
+              </div>
+              <div class="story-card__body">
+                <h3 class="story-card__title">{title !== '' ? title : <em>Untitled story</em>}</h3>
+                {s.subtitle.trim() !== '' && <p class="story-card__dek">{s.subtitle}</p>}
+                <p class="story-card__meta">
+                  <span>{SECTION_LABEL[s.section]}</span>
+                  <span aria-hidden="true">·</span>
+                  {kind === 'published' && s.publishedAt ? (
+                    <span>Published {dateOnly(s.publishedAt)}</span>
+                  ) : (
+                    <span>Edited <time data-local datetime={s.draftUpdatedAt}>{dateOnly(s.draftUpdatedAt)}</time></span>
+                  )}
+                  {s.hasUnpublishedChanges && <span class="story-card__flag">Unpublished edits</span>}
+                </p>
+              </div>
+            </a>
+            <div class="story-card__actions">
+              {kind === 'published' && s.slug && (
+                <a class="story-card__view" href={`${SECTION_PATH[s.section]}${s.slug}/`} target="_blank" rel="noopener">
+                  View on site<span aria-hidden="true"> ↗</span>
+                </a>
+              )}
+              <button type="button" class="story-card__delete" data-delete-id={s.id} data-delete-title={title || 'Untitled story'}>
+                Delete
+              </button>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  )
+}
+
+<style>
+  .story-empty {
+    padding: 2rem 0;
+    font-size: 1.25rem;
+    font-style: italic;
+    color: var(--ink-soft);
+    border-top: 1px solid var(--line);
+  }
+
+  .story-gallery {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr));
+    gap: 1.75rem 1.5rem;
+  }
+
+  .story-card {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .story-card__link {
+    display: flex;
+    flex-direction: column;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .story-card__thumb {
+    aspect-ratio: 4 / 3;
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--paper-deep);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s var(--ease-out);
+  }
+
+  .story-card__link:hover .story-card__thumb {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px -14px rgba(38, 35, 31, 0.4);
+  }
+
+  .story-card__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .story-card__initial {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 3rem;
+    color: var(--line-strong);
+  }
+
+  .story-card__body {
+    padding-top: 0.85rem;
+  }
+
+  .story-card__title {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 1.35rem;
+    line-height: 1.25;
+  }
+
+  .story-card__title em {
+    font-weight: 500;
+    font-style: italic;
+    color: var(--ink-soft);
+  }
+
+  .story-card__link:hover .story-card__title {
+    color: var(--accent-warm);
+  }
+
+  .story-card__dek {
+    margin-top: 0.3rem;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    color: var(--ink-soft);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .story-card__meta {
+    margin-top: 0.6rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: var(--sans);
+    font-size: 0.8rem;
+    color: var(--ink-faint);
+  }
+
+  .story-card__flag {
+    font-family: var(--sans);
+    font-weight: 600;
+    color: var(--accent-warm);
+  }
+
+  .story-card__actions {
+    margin-top: 0.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-family: var(--sans);
+    font-size: 0.85rem;
+  }
+
+  .story-card__view {
+    color: var(--ink-soft);
+  }
+  .story-card__view:hover {
+    color: var(--accent-warm);
+  }
+
+  .story-card__delete {
+    margin-left: auto;
+    color: var(--ink-faint);
+    background: none;
+    border: 0;
+    padding: 0.3rem 0;
+    cursor: pointer;
+  }
+  .story-card__delete:hover {
+    color: #b33;
+  }
+  .story-card__delete:focus-visible {
+    outline: 2px solid var(--accent-warm);
+    border-radius: 2px;
+  }
+</style>
+
+<script>
+  document.addEventListener('click', async (e) => {
+    const btn = (e.target as HTMLElement).closest('[data-delete-id]') as HTMLButtonElement | null;
+    if (!btn) return;
+    const id = btn.getAttribute('data-delete-id');
+    const title = btn.getAttribute('data-delete-title') || 'this story';
+    if (!window.confirm(`Delete "${title}"? This can't be undone.`)) return;
+    btn.disabled = true;
+    const res = await fetch(`/api/admin/stories/${id}/`, { method: 'DELETE', credentials: 'same-origin' });
+    if (res.status === 204) window.location.reload();
+    else {
+      window.alert('Delete failed. Try again.');
+      btn.disabled = false;
+    }
+  });
+</script>

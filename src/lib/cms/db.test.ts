@@ -227,6 +227,22 @@ test('lists: filters, titles, unpublished flag, and only published snapshots for
   assert.equal(await getPublishedStory(db, a.id), null);
 });
 
+test('lists: featuredImageId falls back to the first embedded image when none is set explicitly', async () => {
+  const db = fresh();
+  const s = await createStory(db, {}, deps());
+  const withImage = content('Gallery Story', 'Some text.', [
+    { type: 'image', attrs: { imageId: 'aaaaaaaa-0000-4000-8000-000000000099', alt: 'a', caption: '', decorative: false, size: 'wide' } },
+  ]);
+  const saved = await saveDraft(db, s.id, { baseRev: s.draftRev, document: withImage }, deps());
+  assert.equal(saved.ok, true);
+  const [summary] = await listStories(db, { status: 'draft' });
+  assert.equal(summary.featuredImageId, 'aaaaaaaa-0000-4000-8000-000000000099');
+
+  const noImage = await draft(db, 'No Image Here');
+  const [plain] = (await listStories(db, { status: 'draft' })).filter((x) => x.id === noImage.id);
+  assert.equal(plain.featuredImageId, null);
+});
+
 test('deleteDraft removes draft and published stories', async () => {
   const db = fresh();
   const a = await draft(db, 'Gone');

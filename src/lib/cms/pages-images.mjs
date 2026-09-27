@@ -35,7 +35,7 @@ function manifest() {
 export function cmsImageUrl(imageId) {
   const file = manifest()[imageId];
   if (file) return u('/cms-media/' + file);
-  return `/images/${imageId}`;
+  return `/images/${imageId}/`;
 }
 
 // re-export for component imports
