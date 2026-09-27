@@ -13,7 +13,7 @@
 import type { D1Like } from './db.ts';
 import { getImageExportMeta } from './db.ts';
 import { extensionForMime } from './image-info.ts';
-import type { PublishedSnapshot } from './deploy.ts';
+import { buildPublishedSnapshot, markDeploymentStatus, nextRevision, requestDeployment, type PublishedSnapshot } from './deploy.ts';
 import { referencedImageIds } from './schema.ts';
 
 export interface GithubPublishEnv {
@@ -151,5 +151,52 @@ export async function publishSnapshotToGithub(env: GithubPublishEnv, db: D1Like,
     return { ok: true, commitSha: lastCommitSha };
   } catch (e) {
     return { ok: false, skipped: false, reason: e instanceof Error ? e.message : 'GitHub publish failed' };
+  }
+}
+
+export interface BuildStatus {
+  revision: number | null;
+  status: string;
+  requested: boolean;
+  error: string | null;
+}
+
+/**
+ * Records a durable deployment request for the current published-content
+ * state, then ships it to the live site. Shared by every endpoint that
+ * changes what's published — publishing a story, and deleting one — so the
+ * live site always reflects the current set of published stories, not just
+ * the ones that happened to get an explicit "publish" click. `trigger` is
+ * just bookkeeping (which story caused this deployment); the snapshot itself
+ * always reflects the full current published set from the database.
+ */
+export async function shipPublishedSnapshot(
+  db: D1Like,
+  env: GithubPublishEnv,
+  trigger: { storyId: string; publishedAt: string; slug: string | null; title: string },
+): Promise<BuildStatus> {
+  try {
+    const revision = await nextRevision(db);
+    await requestDeployment(db, {
+      revision,
+      storyId: trigger.storyId,
+      publishedAt: trigger.publishedAt,
+      payload: { slug: trigger.slug, title: trigger.title },
+    });
+
+    const snapshot = await buildPublishedSnapshot(db);
+    const shipped = await publishSnapshotToGithub(env, db, snapshot);
+    if (shipped.ok) {
+      await markDeploymentStatus(db, { revision, status: 'deployed', buildId: shipped.commitSha });
+      return { revision, status: 'deployed', requested: true, error: null };
+    }
+    if (shipped.skipped) {
+      return { revision, status: 'deploy_requested', requested: true, error: null };
+    }
+    await markDeploymentStatus(db, { revision, status: 'failed', error: shipped.reason });
+    return { revision, status: 'failed', requested: true, error: shipped.reason };
+  } catch (e) {
+    console.error('deployment request failed', e instanceof Error ? e.message : e);
+    return { revision: null, status: 'deploy_error', requested: false, error: 'Deployment request could not be recorded.' };
   }
 }
