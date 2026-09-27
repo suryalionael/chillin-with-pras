@@ -4,9 +4,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createTestDb } from './test-db.ts';
-import { insertImage } from './db.ts';
-import { publishSnapshotToGithub, type GithubPublishEnv } from './github-publish.ts';
+import { createStory, deleteDraft, insertImage, publishStory, saveDraft } from './db.ts';
+import { publishSnapshotToGithub, shipPublishedSnapshot, type GithubPublishEnv } from './github-publish.ts';
+import { currentRevision } from './deploy.ts';
 import type { PublishedSnapshot } from './deploy.ts';
+import { emptyStoryDocument } from './schema.ts';
 
 const REPO = 'someone/some-repo';
 const BASE = `/repos/${REPO}/contents`;
@@ -191,3 +193,63 @@ function publishedStory(document: ReturnType<typeof emptyDoc>): PublishedSnapsho
     document: document as unknown as PublishedSnapshot['stories'][number]['document'],
   };
 }
+
+test('shipPublishedSnapshot: a deleted story is excluded from the next shipped snapshot', async (t) => {
+  const db = createTestDb();
+
+  const story = await createStory(db, { section: 'observe' });
+  const doc = { ...emptyStoryDocument(), title: 'Gone Tomorrow', body: { type: 'doc' as const, content: [{ type: 'paragraph' as const, content: [{ type: 'text' as const, text: 'Hello.' }] }] } };
+  const saved = await saveDraft(db, story.id, { baseRev: story.draftRev, document: doc });
+  if (!saved.ok) throw new Error('setup: saveDraft failed');
+  const published = await publishStory(db, story.id, { baseRev: saved.draftRev, publishedAt: '2026-09-01' });
+  if (!published.ok) throw new Error('setup: publishStory failed');
+
+  const putBodies: Record<string, unknown> = {};
+  const { fetchMock } = mockGithub({
+    [`GET ${BASE}/.cms/media-manifest.json`]: () => new Response('not found', { status: 404 }),
+    [`PUT ${BASE}/.cms/media-manifest.json`]: () => json({ commit: { sha: 'manifest-1' } }),
+    [`GET ${BASE}/.cms/snapshot.json`]: () => new Response('not found', { status: 404 }),
+    [`PUT ${BASE}/.cms/snapshot.json`]: async (req) => {
+      putBodies.first = await req.json();
+      return json({ commit: { sha: 'snapshot-1' } });
+    },
+  });
+  t.mock.method(globalThis, 'fetch', fetchMock);
+
+  const env: GithubPublishEnv = { GITHUB_TOKEN: 'tok', GITHUB_REPO: REPO, MEDIA: fakeMedia({}) };
+  const afterPublish = await shipPublishedSnapshot(db, env, {
+    storyId: story.id,
+    publishedAt: '2026-09-01',
+    slug: published.story.slug,
+    title: 'Gone Tomorrow',
+  });
+  assert.equal(afterPublish.status, 'deployed');
+  const firstSnapshot = JSON.parse(Buffer.from((putBodies.first as { content: string }).content, 'base64').toString('utf-8'));
+  assert.equal(firstSnapshot.stories.length, 1);
+  assert.equal(firstSnapshot.stories[0].document.title, 'Gone Tomorrow');
+
+  // Now delete it — mirrors what the DELETE endpoint does: remove from D1, then re-ship.
+  const del = await deleteDraft(db, story.id);
+  assert.equal(del.ok, true);
+
+  const revisionBeforeDelete = await currentRevision(db);
+  t.mock.method(globalThis, 'fetch', mockGithub({
+    [`GET ${BASE}/.cms/media-manifest.json`]: () => contentFile({}, 'manifest-sha'),
+    [`PUT ${BASE}/.cms/media-manifest.json`]: () => json({ commit: { sha: 'manifest-2' } }),
+    [`GET ${BASE}/.cms/snapshot.json`]: () => contentFile({ revision: revisionBeforeDelete, stories: [] }, 'snapshot-sha'),
+    [`PUT ${BASE}/.cms/snapshot.json`]: async (req) => {
+      putBodies.second = await req.json();
+      return json({ commit: { sha: 'snapshot-2' } });
+    },
+  }).fetchMock);
+
+  const afterDelete = await shipPublishedSnapshot(db, env, {
+    storyId: story.id,
+    publishedAt: '2026-09-01',
+    slug: published.story.slug,
+    title: 'Gone Tomorrow',
+  });
+  assert.equal(afterDelete.status, 'deployed');
+  const secondSnapshot = JSON.parse(Buffer.from((putBodies.second as { content: string }).content, 'base64').toString('utf-8'));
+  assert.equal(secondSnapshot.stories.length, 0);
+});

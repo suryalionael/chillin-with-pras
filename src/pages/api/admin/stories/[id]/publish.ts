@@ -3,8 +3,7 @@ import { adminEndpoint, failureResponse, isUuid, json, notFound, readJson, story
 import { publishStory } from '../../../../../lib/cms/db.ts';
 import { isLegacySlug } from '../../../../../lib/cms/legacy-slugs.ts';
 import { jsonError } from '../../../../../lib/cms/guard.ts';
-import { buildPublishedSnapshot, markDeploymentStatus, nextRevision, requestDeployment } from '../../../../../lib/cms/deploy.ts';
-import { publishSnapshotToGithub, type GithubPublishEnv } from '../../../../../lib/cms/github-publish.ts';
+import { shipPublishedSnapshot, type GithubPublishEnv } from '../../../../../lib/cms/github-publish.ts';
 
 export const prerender = false;
 
@@ -50,34 +49,15 @@ export const POST: APIRoute = (context) =>
     );
     if (!result.ok) return failureResponse(result);
 
-    // Content is now published. Record a durable deployment request, then try to
-    // ship it immediately. If the revision bookkeeping itself fails, report that
-    // no deployment was requested rather than pretending one was.
-    let build: { revision: number | null; status: string; requested: boolean; error: string | null };
-    try {
-      const revision = await nextRevision(db);
-      await requestDeployment(db, {
-        revision,
-        storyId: result.story.id,
-        publishedAt: result.story.publishedAt ?? result.story.pubUpdatedAt ?? new Date().toISOString(),
-        payload: { slug: result.story.slug, title: result.story.draft.title },
-      });
-
-      const snapshot = await buildPublishedSnapshot(db);
-      const shipped = await publishSnapshotToGithub(env as unknown as GithubPublishEnv, db, snapshot);
-      if (shipped.ok) {
-        await markDeploymentStatus(db, { revision, status: 'deployed', buildId: shipped.commitSha });
-        build = { revision, status: 'deployed', requested: true, error: null };
-      } else if (shipped.skipped) {
-        build = { revision, status: 'deploy_requested', requested: true, error: null };
-      } else {
-        await markDeploymentStatus(db, { revision, status: 'failed', error: shipped.reason });
-        build = { revision, status: 'failed', requested: true, error: shipped.reason };
-      }
-    } catch (e) {
-      console.error('deployment request failed after publish', e instanceof Error ? e.message : e);
-      build = { revision: null, status: 'deploy_error', requested: false, error: 'Deployment request could not be recorded.' };
-    }
+    // Content is now published. Record a durable deployment request, then ship
+    // it immediately — the live site should reflect this within the same
+    // request/response cycle as the publish click, not on a separate manual step.
+    const build = await shipPublishedSnapshot(db, env as unknown as GithubPublishEnv, {
+      storyId: result.story.id,
+      publishedAt: result.story.publishedAt ?? result.story.pubUpdatedAt ?? new Date().toISOString(),
+      slug: result.story.slug,
+      title: result.story.draft.title,
+    });
 
     return json({ story: storyJson(result.story), build });
   });
