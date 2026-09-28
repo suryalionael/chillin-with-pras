@@ -135,8 +135,26 @@ export class SlashMenu {
     if (!editor?.view) return;
 
     const coords = editor.view.coordsAtPos(range.from);
-    this.element.style.left = `${coords.left}px`;
-    this.element.style.top = `${coords.bottom + 4}px`;
+    const { width, height } = this.element.getBoundingClientRect();
+
+    // The menu opens below the caret by default, but near the bottom of the
+    // viewport (a long document, or the "+" button on a low block) that
+    // would render it partly or fully off-screen with no way to reach items
+    // like "Image" further down the list — flip it above the caret instead
+    // when there isn't room below but there is above.
+    const spaceBelow = window.innerHeight - coords.bottom;
+    const spaceAbove = coords.top;
+    let top = coords.bottom + 4;
+    if (spaceBelow < height + 8 && spaceAbove > spaceBelow) {
+      top = coords.top - height - 4;
+    }
+    top = Math.max(8, Math.min(top, window.innerHeight - height - 8));
+
+    let left = coords.left;
+    left = Math.max(8, Math.min(left, window.innerWidth - width - 8));
+
+    this.element.style.left = `${left}px`;
+    this.element.style.top = `${top}px`;
   }
 
   // Note: this receives SuggestionKeyDownProps ({ view, event, range}), NOT
