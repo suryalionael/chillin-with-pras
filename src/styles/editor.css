@@ -167,6 +167,30 @@
   color: var(--ink);
 }
 
+.editor-publish-note--live {
+  background: #eaf5ea;
+  color: #205020;
+}
+
+.editor-publish-note--failed {
+  background: #fdf3f3;
+  color: #8a1c1c;
+}
+
+.editor-publish-note__retry {
+  background: none;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  padding: 0.2rem 0.6rem;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  cursor: pointer;
+}
+.editor-publish-note__retry:hover {
+  opacity: 0.8;
+}
+
 /* Main — one centered column, left-aligned text */
 .editor-main {
   flex: 1;
@@ -316,7 +340,9 @@
 }
 
 .prose-editor strong {
-  font-weight: 700;
+  /* matches InlineContent.astro's public rendering — the same weight in the
+     editor as on the live page, not a heavier "preview-only" bold. */
+  font-weight: 600;
 }
 
 .prose-editor em {

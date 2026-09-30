@@ -51,7 +51,14 @@ const dateOnly = (iso: string) => new Date(iso).toLocaleDateString('en-US', { da
                   View on site<span aria-hidden="true"> ↗</span>
                 </a>
               )}
-              <button type="button" class="story-card__delete" data-delete-id={s.id} data-delete-title={title || 'Untitled story'}>
+              <button
+                type="button"
+                class="story-card__delete"
+                data-delete-id={s.id}
+                data-delete-title={title || 'Untitled story'}
+                data-delete-section={SECTION_LABEL[s.section]}
+                data-delete-status={kind === 'published' ? 'Published' : 'Draft'}
+              >
                 Delete
               </button>
             </div>
@@ -201,21 +208,32 @@ const dateOnly = (iso: string) => new Date(iso).toLocaleDateString('en-US', { da
     outline: 2px solid var(--accent-warm);
     border-radius: 2px;
   }
+
+  .story-card--deleting {
+    opacity: 0.4;
+    pointer-events: none;
+    transition: opacity 0.2s var(--ease-out);
+  }
 </style>
 
 <script>
-  document.addEventListener('click', async (e) => {
+  // Deleting is a page-level concern (one shared confirmation dialog + one
+  // shared deploy-status toast for however many <StoryGallery> instances are
+  // on the page — drafts and published each render their own), so this just
+  // asks for a delete; admin/index.astro owns the dialog, the DELETE call,
+  // and the "Removing from site… / Removed" follow-up.
+  document.addEventListener('click', (e) => {
     const btn = (e.target as HTMLElement).closest('[data-delete-id]') as HTMLButtonElement | null;
     if (!btn) return;
-    const id = btn.getAttribute('data-delete-id');
-    const title = btn.getAttribute('data-delete-title') || 'this story';
-    if (!window.confirm(`Delete "${title}"? This can't be undone.`)) return;
-    btn.disabled = true;
-    const res = await fetch(`/api/admin/stories/${id}/`, { method: 'DELETE', credentials: 'same-origin' });
-    if (res.status === 204) window.location.reload();
-    else {
-      window.alert('Delete failed. Try again.');
-      btn.disabled = false;
-    }
+    const card = btn.closest('.story-card') as HTMLElement | null;
+    document.dispatchEvent(new CustomEvent('cms:delete-request', {
+      detail: {
+        id: btn.getAttribute('data-delete-id'),
+        title: btn.getAttribute('data-delete-title') || 'Untitled story',
+        section: btn.getAttribute('data-delete-section') || '',
+        status: btn.getAttribute('data-delete-status') || '',
+        card,
+      },
+    }));
   });
 </script>

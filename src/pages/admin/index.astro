@@ -46,6 +46,22 @@ try {
     <h2 id="published-h" class="dash-h">Published <span class="dash-count">{published.length}</span></h2>
     <StoryGallery stories={published} kind="published" emptyText="Nothing published from here yet." />
   </section>
+
+  <dialog id="delete-dialog" class="delete-dialog">
+    <h2 class="delete-dialog__title">Delete this story?</h2>
+    <dl class="delete-dialog__meta">
+      <div><dt>Title</dt><dd data-field="title"></dd></div>
+      <div><dt>Section</dt><dd data-field="section"></dd></div>
+      <div><dt>Status</dt><dd data-field="status"></dd></div>
+    </dl>
+    <p class="delete-dialog__warning">This can’t be undone.</p>
+    <div class="delete-dialog__actions">
+      <button type="button" class="admin-btn admin-btn--quiet" data-action="cancel">Cancel</button>
+      <button type="button" class="admin-btn admin-btn--danger" data-action="confirm">Delete story</button>
+    </div>
+  </dialog>
+
+  <div id="deploy-toasts" class="deploy-toasts" aria-live="polite"></div>
 </AdminLayout>
 
 <style>
@@ -81,4 +97,214 @@ try {
     font-size: 1.7rem;
     color: var(--accent-warm);
   }
+
+  .delete-dialog {
+    margin: auto;
+    padding: 2rem 2.25rem;
+    max-width: 26rem;
+    width: calc(100% - 2rem);
+    border: 0;
+    border-radius: 6px;
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow: 0 24px 60px -20px rgba(38, 35, 31, 0.45);
+  }
+  .delete-dialog::backdrop {
+    background: rgba(38, 35, 31, 0.45);
+  }
+  .delete-dialog__title {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 1.5rem;
+  }
+  .delete-dialog__meta {
+    margin-top: 1.25rem;
+    display: grid;
+    gap: 0.6rem;
+    font-family: var(--sans);
+    font-size: 0.95rem;
+  }
+  .delete-dialog__meta > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .delete-dialog__meta dt {
+    color: var(--ink-faint);
+  }
+  .delete-dialog__meta dd {
+    font-weight: 600;
+    text-align: right;
+  }
+  .delete-dialog__warning {
+    margin-top: 1.25rem;
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    color: #a33;
+  }
+  .delete-dialog__actions {
+    margin-top: 1.75rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+  }
+  .admin-btn--danger {
+    background: #a33;
+    color: #fff;
+    border-color: #a33;
+  }
+  .admin-btn--danger:hover {
+    background: #822;
+  }
+
+  .deploy-toasts {
+    position: fixed;
+    right: 1.5rem;
+    bottom: 1.5rem;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  :global(.deploy-toast) {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1.1rem;
+    max-width: 22rem;
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 4px;
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    box-shadow: 0 12px 30px -12px rgba(38, 35, 31, 0.5);
+  }
+  :global(.deploy-toast--failed) {
+    background: #a33;
+  }
+  :global(.deploy-toast__retry) {
+    flex: none;
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    color: inherit;
+    border-radius: 3px;
+    padding: 0.3rem 0.6rem;
+    font: inherit;
+    cursor: pointer;
+  }
+  :global(.deploy-toast__retry:hover) {
+    border-color: #fff;
+  }
 </style>
+
+<script>
+  interface DeleteDetail {
+    id: string;
+    title: string;
+    section: string;
+    status: string;
+    card: HTMLElement | null;
+  }
+
+  const dialog = document.getElementById('delete-dialog') as HTMLDialogElement;
+  const toasts = document.getElementById('deploy-toasts') as HTMLElement;
+  let pending: DeleteDetail | null = null;
+
+  document.addEventListener('cms:delete-request', ((e: CustomEvent<DeleteDetail>) => {
+    pending = e.detail;
+    (dialog.querySelector('[data-field="title"]') as HTMLElement).textContent = pending.title;
+    (dialog.querySelector('[data-field="section"]') as HTMLElement).textContent = pending.section;
+    (dialog.querySelector('[data-field="status"]') as HTMLElement).textContent = pending.status;
+    dialog.showModal();
+  }) as EventListener);
+
+  // Click on the backdrop (the dialog element itself, outside its content box) cancels.
+  dialog.addEventListener('click', (e) => {
+    if (e.target === dialog) dialog.close();
+  });
+
+  dialog.querySelector('[data-action="cancel"]')?.addEventListener('click', () => dialog.close());
+
+  dialog.querySelector('[data-action="confirm"]')?.addEventListener('click', async () => {
+    const detail = pending;
+    dialog.close();
+    pending = null;
+    if (!detail) return;
+
+    detail.card?.classList.add('story-card--deleting');
+    let res: Response;
+    try {
+      res = await fetch(`/api/admin/stories/${detail.id}/`, { method: 'DELETE', credentials: 'same-origin' });
+    } catch {
+      detail.card?.classList.remove('story-card--deleting');
+      window.alert('Delete failed. Check your connection and try again.');
+      return;
+    }
+    if (!res.ok) {
+      detail.card?.classList.remove('story-card--deleting');
+      window.alert('Delete failed. Try again.');
+      return;
+    }
+    const data = (await res.json().catch(() => ({}))) as { build?: { revision: number | null; status: string } };
+    detail.card?.remove();
+    if (data.build?.revision) pollDeploy(data.build.revision, 'Removing from site…');
+  });
+
+  function pollDeploy(revision: number, initialText: string) {
+    const toast = document.createElement('div');
+    toast.className = 'deploy-toast';
+    toast.setAttribute('role', 'status');
+    const label = document.createElement('span');
+    label.textContent = initialText;
+    toast.appendChild(label);
+    toasts.appendChild(toast);
+
+    const MAX_ATTEMPTS = 60; // ~3 minutes at 3s apart
+    let attempt = 0;
+
+    const tick = async () => {
+      attempt += 1;
+      let d: { status?: string } | null = null;
+      try {
+        const r = await fetch(`/api/admin/deploy-status/?revision=${revision}`, { credentials: 'same-origin' });
+        d = r.ok ? await r.json() : null;
+      } catch {
+        d = null;
+      }
+
+      if (d?.status === 'deployed') {
+        label.textContent = 'Removed';
+        setTimeout(() => toast.remove(), 3000);
+        return;
+      }
+      if (d?.status === 'failed') {
+        toast.classList.add('deploy-toast--failed');
+        label.textContent = 'Removing from the live site failed.';
+        const retry = document.createElement('button');
+        retry.type = 'button';
+        retry.className = 'deploy-toast__retry';
+        retry.textContent = 'Retry';
+        retry.addEventListener('click', async () => {
+          retry.disabled = true;
+          toast.classList.remove('deploy-toast--failed');
+          label.textContent = 'Removing from site…';
+          retry.remove();
+          await fetch('/api/admin/deploy-retry/', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
+          attempt = 0;
+          setTimeout(tick, 1500);
+        });
+        toast.appendChild(retry);
+        return;
+      }
+      if (attempt >= MAX_ATTEMPTS) {
+        label.textContent = 'Still deploying — check the site shortly.';
+        setTimeout(() => toast.remove(), 5000);
+        return;
+      }
+      setTimeout(tick, 3000);
+    };
+    tick();
+  }
+</script>
