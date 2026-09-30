@@ -7,6 +7,7 @@ import { createTestDb } from './test-db.ts';
 import {
   currentRevision,
   currentDeployment,
+  getDeploymentByRevision,
   listDeployments,
   markDeploymentStatus,
   nextRevision,
@@ -17,7 +18,7 @@ import {
   type D1Like,
   type DeployDeps,
 } from './deploy.ts';
-import { createStory, publishStory, saveDraft, type Deps } from './db.ts';
+import { createStory, insertImage, publishStory, saveDraft, type Deps } from './db.ts';
 import { emptyStoryDocument } from './schema.ts';
 
 const fresh = () => createTestDb();
@@ -127,6 +128,17 @@ test('deploy: failed deployment is recorded and does not become current', async 
   assert.equal(rows[0]!.error, 'D1_ERROR: x');
 });
 
+test('deploy: getDeploymentByRevision returns the row the admin UI polls, or null', async () => {
+  const db = fresh();
+  const d = await requestDeployment(db, { revision: 1, storyId: 's1', publishedAt: '2026-09-01', payload: { slug: 'a', title: 'A' } }, deployDeps());
+  await markDeploymentStatus(db, { revision: d.revision, status: 'building', buildId: 'run-1' }, deployDeps());
+
+  const found = await getDeploymentByRevision(db, 1);
+  assert.ok(found);
+  assert.equal(found!.status, 'building');
+  assert.equal(await getDeploymentByRevision(db, 999), null);
+});
+
 test('deploy: status for an unknown revision is not_found', async () => {
   const db = fresh();
   const r = await markDeploymentStatus(db, { revision: 99, status: 'deployed', buildId: 'x' }, deployDeps());
@@ -183,6 +195,34 @@ test('deploy: snapshot contains only published stories with a revision', async (
   assert.equal(snap.revision, rev);
   const titles = snap.stories.map((s) => s.document.title).sort();
   assert.deepEqual(titles, ['Alpha', 'Beta']);
+});
+
+test('deploy: snapshot embeds real width/height for every referenced image', async () => {
+  const db = fresh();
+  const imgId = await insertImage(db, {
+    r2Original: 'images/portrait.jpg',
+    variants: [],
+    width: 900,
+    height: 1600,
+    bytes: 3,
+    mime: 'image/jpeg',
+    sha256: 'x',
+    filename: 'portrait.jpg',
+  }, dbDeps());
+  const s = await createStory(db, { section: 'observe' }, dbDeps());
+  const doc = {
+    ...emptyStoryDocument(),
+    title: 'With a photo',
+    featuredImageId: imgId,
+    body: { type: 'doc' as const, content: [{ type: 'image' as const, attrs: { imageId: imgId, alt: 'x', caption: '', decorative: false, size: 'wide' as const } }] },
+  };
+  const saved = await saveDraft(db, s.id, { baseRev: s.draftRev, document: doc }, dbDeps());
+  assert.equal(saved.ok, true);
+  const pub = await publishStory(db, s.id, { baseRev: (saved as { draftRev: number }).draftRev, publishedAt: '2026-09-01' }, dbDeps());
+  assert.equal(pub.ok, true);
+
+  const snap = await buildPublishedSnapshot(db, deployDeps());
+  assert.deepEqual(snap.images[imgId], { width: 900, height: 1600 });
 });
 
 test('deploy: snapshot failure is loud for a missing DB', async () => {

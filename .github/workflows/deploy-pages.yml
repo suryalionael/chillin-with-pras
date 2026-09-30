@@ -8,6 +8,20 @@ name: deploy-pages
 #
 # The CMS admin itself (D1 + R2 + the writing surface) still runs on its own
 # Cloudflare Worker — only the public-facing site deploys here.
+#
+# Content-only pushes (the CMS commits only `.cms/**`) skip the unit tests and
+# typecheck: every document that reaches `.cms/snapshot.json` was already
+# validated server-side (Zod schemas, publishIssues) before the CMS accepted
+# it, so re-running the whole app's test/typecheck suite against unchanged
+# app code adds latency without adding safety. A push that also touches app
+# code always runs the full gate.
+#
+# If a CMS_PIPELINE_TOKEN repo secret is configured, this also reports
+# building -> deployed/failed back to the CMS for the revision in
+# .cms/snapshot.json, so the admin UI can show real "Deploying… -> Live"
+# status instead of a static "give it a couple of minutes". Best-effort: a
+# missing/wrong token just means those two curls fail harmlessly (the
+# publish/delete already succeeded in the CMS regardless).
 
 on:
   push:
@@ -23,6 +37,9 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+env:
+  CMS_STATUS_URL: https://chillin-with-pras.suryalionael.workers.dev/api/deploy/status/
+
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
@@ -31,19 +48,64 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # need HEAD^ to tell a content-only push from a code push
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
+      - name: Read the published content revision (if any)
+        id: rev
+        run: |
+          if [ -f .cms/snapshot.json ]; then
+            echo "value=$(node -pe "require('./.cms/snapshot.json').revision")" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Decide whether this push only touched CMS content
+        id: scope
+        run: |
+          if git rev-parse HEAD^ >/dev/null 2>&1; then
+            changed=$(git diff --name-only HEAD^ HEAD)
+          else
+            changed=$(git show --name-only --format= HEAD)
+          fi
+          echo "$changed"
+          if [ -n "$changed" ] && ! echo "$changed" | grep -qv '^\.cms/'; then
+            echo "content_only=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "content_only=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Cache the Astro image-processing cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules/.astro
+          key: astro-image-cache-${{ hashFiles('src/assets/**', 'public/**') }}
+          restore-keys: |
+            astro-image-cache-
+
       - name: Install dependencies
         run: npm ci
 
+      - name: Report deploy started
+        if: steps.rev.outputs.value != ''
+        continue-on-error: true
+        run: |
+          curl -fsS -X POST "$CMS_STATUS_URL" \
+            -H "authorization: Bearer ${{ secrets.CMS_PIPELINE_TOKEN }}" \
+            -H "content-type: application/json" \
+            -d "{\"revision\": ${{ steps.rev.outputs.value }}, \"status\": \"building\"}"
+
       - name: Unit tests
+        if: steps.scope.outputs.content_only != 'true'
         run: npm test
 
       - name: Type check
+        if: steps.scope.outputs.content_only != 'true'
         run: npm run typecheck
 
       - name: Build static site (published snapshot + Pages base)
@@ -81,3 +143,19 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Report deploy finished
+        if: always() && steps.rev.outputs.value != ''
+        continue-on-error: true
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            curl -fsS -X POST "$CMS_STATUS_URL" \
+              -H "authorization: Bearer ${{ secrets.CMS_PIPELINE_TOKEN }}" \
+              -H "content-type: application/json" \
+              -d "{\"revision\": ${{ steps.rev.outputs.value }}, \"status\": \"deployed\", \"buildId\": \"${{ github.run_id }}\"}"
+          else
+            curl -fsS -X POST "$CMS_STATUS_URL" \
+              -H "authorization: Bearer ${{ secrets.CMS_PIPELINE_TOKEN }}" \
+              -H "content-type: application/json" \
+              -d "{\"revision\": ${{ steps.rev.outputs.value }}, \"status\": \"failed\", \"error\": \"Build ${{ github.run_id }} failed — see Actions log.\"}"
+          fi

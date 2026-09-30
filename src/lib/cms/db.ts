@@ -432,6 +432,24 @@ export async function getImageExportMeta(db: D1Like, id: string): Promise<ImageE
   return row ? { r2Original: row.r2_original, mime: row.mime, filename: row.filename } : null;
 }
 
+/**
+ * Real width/height for a set of images, keyed by id. Public articles use this
+ * so a CMS photo's aspect ratio matches how it was actually shot instead of a
+ * hardcoded fallback — the same way legacy images always have (their real
+ * dimensions come from the file itself, measured at build time).
+ */
+export async function getImageDimensions(db: D1Like, ids: string[]): Promise<Record<string, { width: number; height: number }>> {
+  if (ids.length === 0) return {};
+  const marks = ids.map(() => '?').join(',');
+  const { results } = await db
+    .prepare(`SELECT id, width, height FROM images WHERE id IN (${marks})`)
+    .bind(...ids)
+    .all<{ id: string; width: number; height: number }>();
+  const out: Record<string, { width: number; height: number }> = {};
+  for (const r of results) out[r.id] = { width: r.width, height: r.height };
+  return out;
+}
+
 export async function insertImage(db: D1Like, img: Omit<ImageRecord, 'id'> & { id?: string }, deps?: Partial<Deps>): Promise<string> {
   const d = withDeps(deps);
   const id = img.id ?? d.newId();

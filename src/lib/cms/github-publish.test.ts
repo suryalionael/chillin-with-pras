@@ -45,7 +45,7 @@ const contentFile = (obj: unknown, sha: string) =>
   json({ sha, content: Buffer.from(JSON.stringify(obj)).toString('base64') });
 
 function snapshot(overrides: Partial<PublishedSnapshot> = {}): PublishedSnapshot {
-  return { revision: 1, generatedAt: '2026-09-26T00:00:00.000Z', stories: [], ...overrides };
+  return { revision: 1, generatedAt: '2026-09-26T00:00:00.000Z', stories: [], images: {}, ...overrides };
 }
 
 test('github-publish: not configured is reported as skipped, not an error', async () => {
@@ -223,7 +223,7 @@ test('shipPublishedSnapshot: a deleted story is excluded from the next shipped s
     slug: published.story.slug,
     title: 'Gone Tomorrow',
   });
-  assert.equal(afterPublish.status, 'deployed');
+  assert.equal(afterPublish.status, 'building');
   const firstSnapshot = JSON.parse(Buffer.from((putBodies.first as { content: string }).content, 'base64').toString('utf-8'));
   assert.equal(firstSnapshot.stories.length, 1);
   assert.equal(firstSnapshot.stories[0].document.title, 'Gone Tomorrow');
@@ -249,7 +249,7 @@ test('shipPublishedSnapshot: a deleted story is excluded from the next shipped s
     slug: published.story.slug,
     title: 'Gone Tomorrow',
   });
-  assert.equal(afterDelete.status, 'deployed');
+  assert.equal(afterDelete.status, 'building');
   const secondSnapshot = JSON.parse(Buffer.from((putBodies.second as { content: string }).content, 'base64').toString('utf-8'));
   assert.equal(secondSnapshot.stories.length, 0);
 });
