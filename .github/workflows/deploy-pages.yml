@@ -80,6 +80,9 @@ jobs:
             echo "content_only=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Install dependencies
+        run: npm ci
+
       - name: Cache the Astro image-processing cache
         uses: actions/cache@v4
         with:
@@ -87,9 +90,6 @@ jobs:
           key: astro-image-cache-${{ hashFiles('src/assets/**', 'public/**') }}
           restore-keys: |
             astro-image-cache-
-
-      - name: Install dependencies
-        run: npm ci
 
       - name: Report deploy started
         if: steps.rev.outputs.value != ''
