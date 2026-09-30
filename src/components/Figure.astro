@@ -9,11 +9,17 @@ import { cmsImageUrl } from '../lib/cms/pages-images.mjs';
 
 const { variant, files, tone = 'wide', hero = false, caption = '', isCms = false } = Astro.props;
 
+// A CMS photo's real width/height come from the snapshot (see PublishedSnapshot
+// in deploy.ts); 16:9 is only a fallback for the rare case they're missing
+// (an older snapshot, or an image row that's gone) — legacy files always have
+// their true ratio measured from the file itself via ratio().
+const arOf = (f) => (f.width && f.height ? f.width / f.height : 1.7778);
+
 // tone: 'wide' (full story width) | 'inset-left' | 'inset-right'
 const rows = [];
 if (variant === 'cluster') {
   const rest = files.slice(1);
-  const wideAll = (list) => list.every((f) => (isCms ? true : ratio(f.file) >= 1.15));
+  const wideAll = (list) => list.every((f) => (isCms ? arOf(f) >= 1.15 : ratio(f.file) >= 1.15));
   let i = 0;
   // an odd remainder opens with a row of three, but only when all three are
   // landscape; otherwise the last photograph stands alone, large
@@ -23,7 +29,7 @@ if (variant === 'cluster') {
   }
   for (; i < rest.length; i += 2) rows.push(rest.slice(i, i + 2));
 }
-const ar = (f) => isCms ? '1.7778' : ratio(f.file).toFixed(4); // default 16:9 for CMS images
+const ar = (f) => isCms ? arOf(f).toFixed(4) : ratio(f.file).toFixed(4);
 ---
 
 <figure class:list={['figure', `figure--${variant}`, `figure--${tone}`, hero && 'figure--hero']}>
@@ -53,9 +59,9 @@ const ar = (f) => isCms ? '1.7778' : ratio(f.file).toFixed(4); // default 16:9 f
   )}
 
   {variant === 'pair' && (
-    <div class="figure__row" style={`--sum:${files.reduce((t, f) => t + (isCms ? 1.7778 : ratio(f.file)), 0).toFixed(4)}`}>
+    <div class="figure__row" style={`--sum:${files.reduce((t, f) => t + (isCms ? arOf(f) : ratio(f.file)), 0).toFixed(4)}`}>
       {files.map((f) => (
-        <div class="photo-frame" style={`--ar:${isCms ? '1.7778' : ar(f)}`}>
+        <div class="photo-frame" style={`--ar:${ar(f)}`}>
           {isCms ? (
             <img
               src={cmsImageUrl(f.imageId)}
@@ -94,10 +100,10 @@ const ar = (f) => isCms ? '1.7778' : ratio(f.file).toFixed(4); // default 16:9 f
       {rows.map((row) => (
         <div
           class:list={['figure__row', row.length === 1 && 'figure__row--solo']}
-          style={`--sum:${row.reduce((t, f) => t + (isCms ? 1.7778 : ratio(f.file)), 0).toFixed(4)}`}
+          style={`--sum:${row.reduce((t, f) => t + (isCms ? arOf(f) : ratio(f.file)), 0).toFixed(4)}`}
         >
           {row.map((f) => (
-            <div class="photo-frame" style={`--ar:${isCms ? '1.7778' : ar(f)}`}>
+            <div class="photo-frame" style={`--ar:${ar(f)}`}>
               {isCms ? (
                 <img
                   src={cmsImageUrl(f.imageId)}

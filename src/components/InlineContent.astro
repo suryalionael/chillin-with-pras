@@ -6,7 +6,9 @@ const { inline } = Astro.props;
 {inline.map((node, i) => {
   if (node.br) return <br key={i} />;
   const style = {};
-  if (node.bold) style.fontWeight = 700;
+  // 600, not 700: against a serif body this weight already reads as clear
+  // emphasis without the heavier, more "UI" look a full bold jump gives.
+  if (node.bold) style.fontWeight = 600;
   if (node.italic) style.fontStyle = 'italic';
   if (node.href) {
     return (

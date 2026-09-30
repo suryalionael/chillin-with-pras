@@ -16,7 +16,7 @@ import { readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { cwd } from 'node:process';
 import type { PublishedStory } from './db.ts';
-import { assembleArticles, legacyArticles, type Article, type RawSite } from '../../lib/content/article.ts';
+import { assembleArticles, legacyArticles, type Article, type ImageDimensions, type RawSite } from '../../lib/content/article.ts';
 import { globSync } from 'glob';
 
 // Load site.json from project root
@@ -172,6 +172,47 @@ export function fetchPublishedCmsStoriesFromSnapshotFile(path: string): Publishe
   });
 }
 
+/**
+ * Real width/height for every image row in the local D1 file — cheap enough
+ * at this project's scale to just read them all, rather than first working
+ * out which ids the published stories actually reference. Best-effort: a
+ * missing/unreadable DB just means Figure.astro falls back to its default
+ * aspect ratio for CMS photos, same as before this existed.
+ */
+export async function fetchCmsImageDimensions(dbPath: string | null = LOCAL_DB_PATH): Promise<ImageDimensions> {
+  if (CMS_BUILD_SKIP || !dbPath) return {};
+  let db: ReturnType<typeof createClient> | null = null;
+  try {
+    db = createClient({ url: `file:${dbPath}` });
+    const result = await db.execute('SELECT id, width, height FROM images');
+    const out: ImageDimensions = {};
+    for (const row of result.rows as unknown as { id: string; width: number; height: number }[]) {
+      out[row.id] = { width: row.width, height: row.height };
+    }
+    return out;
+  } catch {
+    return {};
+  } finally {
+    try {
+      db?.close();
+    } catch {
+      // connection never opened
+    }
+  }
+}
+
+/** The snapshot file's own `images` map (see PublishedSnapshot in deploy.ts) — the
+ * CI/Pages equivalent of fetchCmsImageDimensions, with no D1 access required. */
+export function fetchImageDimensionsFromSnapshotFile(path: string): ImageDimensions {
+  if (CMS_BUILD_SKIP) return {};
+  try {
+    const data = JSON.parse(readFileSync(path, 'utf-8')) as { images?: unknown };
+    return data.images && typeof data.images === 'object' ? (data.images as ImageDimensions) : {};
+  } catch {
+    return {};
+  }
+}
+
 let cachedArticles: Article[] | null = null;
 
 /**
@@ -183,10 +224,10 @@ let cachedArticles: Article[] | null = null;
 export async function buildArticleList(): Promise<Article[]> {
   if (cachedArticles) return cachedArticles;
   const legacy = legacyArticles(siteData);
-  const cmsStories = process.env.CMS_SNAPSHOT_FILE
-    ? fetchPublishedCmsStoriesFromSnapshotFile(process.env.CMS_SNAPSHOT_FILE)
-    : await fetchPublishedCmsStories();
-  cachedArticles = assembleArticles(legacy, cmsStories);
+  const snapshotFile = process.env.CMS_SNAPSHOT_FILE;
+  const cmsStories = snapshotFile ? fetchPublishedCmsStoriesFromSnapshotFile(snapshotFile) : await fetchPublishedCmsStories();
+  const imageDims = snapshotFile ? fetchImageDimensionsFromSnapshotFile(snapshotFile) : await fetchCmsImageDimensions();
+  cachedArticles = assembleArticles(legacy, cmsStories, imageDims);
   return cachedArticles;
 }
 

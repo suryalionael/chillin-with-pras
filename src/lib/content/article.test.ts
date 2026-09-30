@@ -67,6 +67,19 @@ test('CMS document maps every supported concept to article blocks', () => {
   assert.deepEqual(b[7], { type: 'img', source: 'cms', imageId: IMG, alt: 'alt', caption: 'cap', decorative: false, size: 'inset' });
 });
 
+test('docToBlocks: an image gets its real width/height when the snapshot has them, and no width/height key at all otherwise', () => {
+  const doc = parse({
+    version: 1, title: 't', subtitle: '', dateline: '', featuredImageId: null,
+    body: { type: 'doc', content: [{ type: 'image', attrs: { imageId: IMG, alt: 'alt', caption: '' } }] },
+  });
+  const withDims = docToBlocks(doc, { [IMG]: { width: 900, height: 1600 } });
+  assert.deepEqual(withDims[0], { type: 'img', source: 'cms', imageId: IMG, alt: 'alt', caption: '', decorative: false, size: 'wide', width: 900, height: 1600 });
+
+  const withoutDims = docToBlocks(doc);
+  assert.equal('width' in withoutDims[0]!, false);
+  assert.equal('height' in withoutDims[0]!, false);
+});
+
 test('published story becomes an Article at the standard public path', () => {
   const a = publishedToArticle(story(), 31);
   assert.deepEqual([a.source, a.path, a.section, a.order, a.title, a.subtitle, a.dateISO], ['cms', '/to-observe-and-report/my-new-story/', 'observe', 31, 'My New Story', 'A subtitle', '2026-09-20']);

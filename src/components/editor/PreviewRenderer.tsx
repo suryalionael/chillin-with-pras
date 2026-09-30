@@ -15,7 +15,7 @@ function renderInline(inline: Inline[]): React.ReactNode {
   return inline.map((node, i) => {
     if ('br' in node) return <br key={i} />;
     const style: React.CSSProperties = {};
-    if (node.bold) style.fontWeight = 700;
+    if (node.bold) style.fontWeight = 600; // matches InlineContent.astro's public rendering
     if (node.italic) style.fontStyle = 'italic';
     if (node.href) {
       return (
