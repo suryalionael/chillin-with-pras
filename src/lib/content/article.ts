@@ -58,7 +58,15 @@ export interface CmsImageBlock {
   caption: string;
   decorative: boolean;
   size: 'wide' | 'inset';
+  /** the photo's real dimensions, when known — undefined only for a snapshot
+   * taken before this existed, or an image row that has since gone missing. */
+  width?: number;
+  height?: number;
 }
+
+/** Image dimensions by id, threaded from wherever published content came from
+ * (D1 directly in local dev, the snapshot file's own `images` map in CI/Pages). */
+export type ImageDimensions = Record<string, { width: number; height: number }>;
 export interface SubheadingBlock {
   type: 'subheading';
   text: string;
@@ -215,7 +223,7 @@ function toList(node: { type: 'bulletList' | 'orderedList'; content: readonly Do
   };
 }
 
-export function docToBlocks(doc: StoryDocument): ArticleBlock[] {
+export function docToBlocks(doc: StoryDocument, imageDims: ImageDimensions = {}): ArticleBlock[] {
   const blocks: ArticleBlock[] = [];
   for (const b of doc.body.content) {
     switch (b.type) {
@@ -241,9 +249,14 @@ export function docToBlocks(doc: StoryDocument): ArticleBlock[] {
       case 'horizontalRule':
         blocks.push({ type: 'divider' });
         break;
-      case 'image':
-        blocks.push({ type: 'img', source: 'cms', imageId: b.attrs.imageId, alt: b.attrs.alt, caption: b.attrs.caption, decorative: b.attrs.decorative, size: b.attrs.size });
+      case 'image': {
+        const dims = imageDims[b.attrs.imageId];
+        blocks.push({
+          type: 'img', source: 'cms', imageId: b.attrs.imageId, alt: b.attrs.alt, caption: b.attrs.caption,
+          decorative: b.attrs.decorative, size: b.attrs.size, ...(dims ? { width: dims.width, height: dims.height } : {}),
+        });
         break;
+      }
       case 'embed':
         blocks.push({ type: 'embed', url: b.attrs.url });
         break;
@@ -261,7 +274,7 @@ export function formatDateline(dateISO: string): string {
   return `${MONTHS[Number(m[2]) - 1] ?? ''} ${Number(m[3])}, ${m[1]}`;
 }
 
-export function publishedToArticle(story: PublishedStory, order: number): Article {
+export function publishedToArticle(story: PublishedStory, order: number, imageDims: ImageDimensions = {}): Article {
   const doc = story.document;
   return {
     source: 'cms',
@@ -274,7 +287,7 @@ export function publishedToArticle(story: PublishedStory, order: number): Articl
     dateline: doc.dateline.trim() !== '' ? doc.dateline : formatDateline(story.publishedAt),
     dateISO: story.publishedAt,
     featuredImageId: doc.featuredImageId,
-    blocks: docToBlocks(doc),
+    blocks: docToBlocks(doc, imageDims),
   };
 }
 
@@ -286,7 +299,7 @@ export function publishedToArticle(story: PublishedStory, order: number): Articl
  * (the public site resolves articles by slug), so a collision is a build error
  * rather than a silent override.
  */
-export function assembleArticles(legacy: Article[], published: PublishedStory[]): Article[] {
+export function assembleArticles(legacy: Article[], published: PublishedStory[], imageDims: ImageDimensions = {}): Article[] {
   const taken = new Set(legacy.map((a) => a.slug));
   const next: Record<Section, number> = { observe: 0, show: 0 };
   for (const a of legacy) next[a.section] = Math.max(next[a.section], a.order);
@@ -297,7 +310,7 @@ export function assembleArticles(legacy: Article[], published: PublishedStory[])
     if (taken.has(story.slug)) throw new Error(`CMS story "${story.slug}" collides with an existing article slug.`);
     taken.add(story.slug);
     next[story.section] += 1;
-    cms.push(publishedToArticle(story, next[story.section]));
+    cms.push(publishedToArticle(story, next[story.section], imageDims));
   }
   return [...legacy, ...cms];
 }
