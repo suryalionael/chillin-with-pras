@@ -22,6 +22,14 @@ interface ApiBody {
   error?: { code?: string; message?: string; currentRev?: number; issues?: { message: string }[] };
 }
 
+/** Deploy progress shown next to Publish/Delete: mirrors the `deployments` row this
+ * revision is polling, once the deploy-pages workflow starts reporting real status. */
+interface DeployState {
+  revision: number;
+  phase: 'deploying' | 'live' | 'failed' | 'unknown' | 'not_configured';
+  error?: string | null;
+}
+
 interface StoryEditorProps {
   storyId: string;
   initialDoc: StoryDocument;
@@ -76,10 +84,77 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
   const [insertPlusPos, setInsertPlusPos] = useState({ top: 0, left: 0 });
   const [imagePickerOpen, setImagePickerOpen] = useState(false);
   const [pendingImageRange, setPendingImageRange] = useState<{ from: number; to: number } | null>(null);
-  const [publishNote, setPublishNote] = useState<string | null>(null);
+  const [deployState, setDeployState] = useState<DeployState | null>(null);
   const insertPlusBlockRef = useRef<{ from: number; to: number } | null>(null);
   const pageMenuRef = useRef<SlashMenu | null>(null);
   const hoveredBlockRef = useRef<Element | null>(null);
+  const pollTokenRef = useRef(0);
+
+  useEffect(() => () => { pollTokenRef.current += 1; }, []);
+
+  const pollDeploy = useCallback((revision: number) => {
+    const token = ++pollTokenRef.current;
+    let attempt = 0;
+    const MAX_ATTEMPTS = 60; // ~3 minutes at 3s apart
+    const tick = async () => {
+      if (pollTokenRef.current !== token) return;
+      attempt += 1;
+      let body: { status?: string; error?: string | null } | null = null;
+      try {
+        const r = await fetch(`/api/admin/deploy-status/?revision=${revision}`, { credentials: 'same-origin' });
+        body = r.ok ? await r.json() : null;
+      } catch {
+        body = null;
+      }
+      if (pollTokenRef.current !== token) return;
+      if (body?.status === 'deployed') {
+        setDeployState({ revision, phase: 'live', error: null });
+        return;
+      }
+      if (body?.status === 'failed') {
+        setDeployState({ revision, phase: 'failed', error: body.error ?? null });
+        return;
+      }
+      if (attempt >= MAX_ATTEMPTS) {
+        setDeployState({ revision, phase: 'unknown', error: null });
+        return;
+      }
+      setTimeout(tick, 3000);
+    };
+    tick();
+  }, []);
+
+  const applyBuildResult = useCallback((build: ApiBody['build']) => {
+    if (!build) {
+      setDeployState(null);
+      return;
+    }
+    if (build.status === 'deploy_requested' || !build.requested) {
+      // 'deploy_requested' with nothing after it means shipping was skipped
+      // (GITHUB_TOKEN/GITHUB_REPO not configured) — that deployment row will
+      // never move, so there is nothing to poll. !requested means the
+      // request itself couldn't even be recorded.
+      setDeployState({ revision: build.revision ?? -1, phase: 'not_configured', error: build.error ?? null });
+      return;
+    }
+    if (build.status === 'failed' || build.revision == null) {
+      setDeployState({ revision: build.revision ?? -1, phase: 'failed', error: build.error ?? null });
+      return;
+    }
+    setDeployState({ revision: build.revision, phase: 'deploying', error: null });
+    pollDeploy(build.revision);
+  }, [pollDeploy]);
+
+  const handleDeployRetry = useCallback(async () => {
+    setDeployState((s) => (s ? { ...s, phase: 'deploying', error: null } : s));
+    try {
+      const res = await fetch('/api/admin/deploy-retry/', { method: 'POST', credentials: 'same-origin' });
+      const data = (await res.json().catch(() => ({}))) as ApiBody;
+      applyBuildResult(data.build);
+    } catch {
+      setDeployState((s) => (s ? { ...s, phase: 'failed' } : s));
+    }
+  }, [applyBuildResult]);
 
   // @tiptap/suggestion v3 exports a ProseMirror plugin factory, not an
   // extension with .configure(). It must be wrapped in an Extension whose
@@ -377,7 +452,8 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
     cancelSave();
     setStatus('saving');
     setError(null);
-    setPublishNote(null);
+    pollTokenRef.current += 1; // invalidate any poll from a previous publish
+    setDeployState(null);
 
     // Flush the working draft first so the publish posts exactly what is on screen.
     let baseRev = rev;
@@ -419,23 +495,13 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
       }
       setStatus('saved');
       setError(null);
-      const build = data.build;
-      if (build?.status === 'deployed') {
-        setPublishNote('Published! It should be live on the site in a couple of minutes.');
-        setTimeout(() => setPublishNote(null), 6000);
-      } else if (build?.status === 'failed') {
-        setPublishNote("Published, but something went wrong putting it live. Try publishing again in a moment.");
-      } else if (build?.requested) {
-        setPublishNote('Published, but publishing to the live site isn’t set up yet.');
-      } else {
-        setPublishNote(null);
-      }
+      applyBuildResult(data.build);
       setTimeout(() => setStatus('idle'), 2000);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Publish failed');
       setStatus('error');
     }
-  }, [status, cancelSave, doc, title, subtitle, rev, onSave, storyId]);
+  }, [status, cancelSave, doc, title, subtitle, rev, onSave, storyId, applyBuildResult]);
 
   const handleConflictResolve = useCallback(async (useLocal: boolean) => {
     if (!showConflict) return;
@@ -502,9 +568,19 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
         </div>
       )}
 
-      {publishNote && (
-        <div className="editor-publish-note" role="status">
-          {publishNote}
+      {deployState && (
+        <div className={`editor-publish-note editor-publish-note--${deployState.phase}`} role="status">
+          {deployState.phase === 'deploying' && 'Published — deploying to the live site…'}
+          {deployState.phase === 'live' && 'Published and live on the site.'}
+          {deployState.phase === 'failed' && (
+            <>
+              {deployState.error ? `Published, but deploying it failed: ${deployState.error}` : 'Published, but deploying it failed.'}
+              {' '}
+              <button type="button" className="editor-publish-note__retry" onClick={handleDeployRetry}>Retry</button>
+            </>
+          )}
+          {deployState.phase === 'unknown' && 'Published — still deploying. Check the site in a few minutes.'}
+          {deployState.phase === 'not_configured' && 'Published, but publishing to the live site isn’t set up yet.'}
         </div>
       )}
 
