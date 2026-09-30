@@ -9,7 +9,8 @@
 // is the highest revision that reached 'deployed'. An older build finishing
 // late is recorded (deployed, superseded=1) but never reported current, so a
 // stale build can never overwrite a newer deployment.
-import { listPublishedStories, type PublishedStory, type D1Like } from './db.ts';
+import { getImageDimensions, listPublishedStories, type PublishedStory, type D1Like } from './db.ts';
+import { referencedImageIds } from './schema.ts';
 export type { D1Like } from './db.ts';
 
 export interface DeployDeps {
@@ -173,6 +174,12 @@ export async function markDeploymentStatus(db: D1Like, input: MarkDeploymentInpu
 
 // ---------- reads ----------
 
+/** One deployment row by its revision — the shape the admin UI polls after a publish/delete. */
+export async function getDeploymentByRevision(db: D1Like, revision: number): Promise<Deployment | null> {
+  const row = await db.prepare('SELECT * FROM deployments WHERE revision = ?').bind(revision).first<DeploymentRow>();
+  return row ? toDeployment(row) : null;
+}
+
 export async function listDeployments(db: D1Like, limit = 20): Promise<Deployment[]> {
   const { results } = await db
     .prepare(`SELECT * FROM deployments ORDER BY revision DESC LIMIT ?`)
@@ -230,12 +237,18 @@ export interface PublishedSnapshot {
   revision: number;
   generatedAt: string;
   stories: PublishedStory[];
+  /** real width/height for every image any published story references, keyed
+   * by image id — the Pages build has no D1 access, so this is the only way
+   * it can size a CMS photo by its actual aspect ratio instead of guessing. */
+  images: Record<string, { width: number; height: number }>;
 }
 
 /** Assembles the exact published-content snapshot the static build consumes. */
 export async function buildPublishedSnapshot(db: D1Like, deps?: Partial<DeployDeps>): Promise<PublishedSnapshot> {
   const [revision, stories] = await Promise.all([currentRevision(db), listPublishedStories(db)]);
-  return { revision, generatedAt: iso(withDeps(deps).now()), stories };
+  const ids = [...new Set(stories.flatMap((s) => referencedImageIds(s.document)))];
+  const images = await getImageDimensions(db, ids);
+  return { revision, generatedAt: iso(withDeps(deps).now()), stories, images };
 }
 
 // ---------- auth for the build-facing endpoints ----------

@@ -15,14 +15,16 @@ export const GET: APIRoute = (context) =>
   });
 
 /**
- * DELETE /api/admin/stories/:id/  ->  204. Deletes the story (draft or published).
+ * DELETE /api/admin/stories/:id/  ->  200 { build: BuildStatus | null }. Deletes the story (draft or published).
  *
  * Deleting a published story changes what should be live just as much as
  * publishing one does — the live site must stop showing it. So this ships an
  * updated snapshot (the database naturally excludes the just-deleted story
  * from it) the same way publishing does, best-effort: if shipping fails the
  * delete still stands, and the admin dashboard's Deployments section shows
- * the failure the same way a failed publish would.
+ * the failure the same way a failed publish would. `build` is null for a
+ * draft-only delete (nothing was live, so there is nothing to re-deploy);
+ * the gallery only polls /api/admin/deploy-status/ when it gets one back.
  */
 export const DELETE: APIRoute = (context) =>
   adminEndpoint(context, async ({ db, env }) => {
@@ -35,8 +37,9 @@ export const DELETE: APIRoute = (context) =>
     const r = await deleteDraft(db, id);
     if (!r.ok) return notFound();
 
+    let build = null;
     if (before.status === 'published') {
-      await shipPublishedSnapshot(db, env as unknown as GithubPublishEnv, {
+      build = await shipPublishedSnapshot(db, env as unknown as GithubPublishEnv, {
         storyId: before.id,
         publishedAt: before.publishedAt ?? before.pubUpdatedAt ?? new Date().toISOString(),
         slug: before.slug,
@@ -44,5 +47,5 @@ export const DELETE: APIRoute = (context) =>
       });
     }
 
-    return new Response(null, { status: 204, headers: { 'cache-control': 'no-store' } });
+    return json({ build });
   });

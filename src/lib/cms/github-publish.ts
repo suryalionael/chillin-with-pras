@@ -187,8 +187,14 @@ export async function shipPublishedSnapshot(
     const snapshot = await buildPublishedSnapshot(db);
     const shipped = await publishSnapshotToGithub(env, db, snapshot);
     if (shipped.ok) {
-      await markDeploymentStatus(db, { revision, status: 'deployed', buildId: shipped.commitSha });
-      return { revision, status: 'deployed', requested: true, error: null };
+      // The commit landed on `main`, but that only triggers the deploy-pages
+      // workflow — it hasn't built or gone live yet. That workflow reports
+      // its own 'building' -> 'deployed'/'failed' transitions back to
+      // /api/deploy/status/, keyed by this same revision. Marking this
+      // 'deployed' here (before the build even started) was misleading: the
+      // admin UI would say "Live" while GitHub Pages was still mid-build.
+      await markDeploymentStatus(db, { revision, status: 'building', buildId: shipped.commitSha });
+      return { revision, status: 'building', requested: true, error: null };
     }
     if (shipped.skipped) {
       return { revision, status: 'deploy_requested', requested: true, error: null };
