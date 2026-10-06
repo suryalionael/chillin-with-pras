@@ -54,7 +54,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
       - name: Read the published content revision (if any)
         id: rev
@@ -80,7 +79,15 @@ jobs:
             echo "content_only=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Restore node_modules
+        id: nm
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Install dependencies
+        if: steps.nm.outputs.cache-hit != 'true'
         run: npm ci
 
       - name: Cache the Astro image-processing cache
