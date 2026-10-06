@@ -1,6 +1,6 @@
 ---
 import type { StorySummary } from '../../lib/cms/db.ts';
-import { SECTION_LABEL, SECTION_PATH } from '../../lib/cms/sections.ts';
+import { PUBLIC_SITE, SECTION_LABEL, SECTION_PATH } from '../../lib/cms/sections.ts';
 
 interface Props {
   stories: StorySummary[];
@@ -47,7 +47,7 @@ const dateOnly = (iso: string) => new Date(iso).toLocaleDateString('en-US', { da
             </a>
             <div class="story-card__actions">
               {kind === 'published' && s.slug && (
-                <a class="story-card__view" href={`${SECTION_PATH[s.section]}${s.slug}/`} target="_blank" rel="noopener">
+                <a class="story-card__view" href={`${PUBLIC_SITE}${SECTION_PATH[s.section]}${s.slug}/`} target="_blank" rel="noopener">
                   View on site<span aria-hidden="true"> ↗</span>
                 </a>
               )}
