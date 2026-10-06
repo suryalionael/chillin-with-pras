@@ -3,6 +3,7 @@
 // global.css) but is a quieter, more functional surface: a writing desk, not a
 // copy of the public pages. Never indexed, never cached (middleware also
 // enforces both with headers).
+import { PUBLIC_SITE } from '../lib/cms/sections.ts';
 import '@fontsource/cormorant-garamond/500.css';
 import '@fontsource/cormorant-garamond/500-italic.css';
 import '@fontsource/cormorant-garamond/600.css';
@@ -41,7 +42,7 @@ const admin = Astro.locals.admin;
           <span class="admin-bar__hand">admin</span>
         </a>
         <nav class="admin-bar__nav" aria-label="Admin">
-          <a href="/" target="_blank" rel="noopener">View site<span aria-hidden="true"> ↗</span></a>
+          <a href={PUBLIC_SITE + '/'} target="_blank" rel="noopener">View site<span aria-hidden="true"> ↗</span></a>
           {admin && <span class="admin-bar__who" title={`Signed in as ${admin.email}`}>{admin.email}</span>}
           {admin?.source === 'dev-bypass' && <span class="admin-bar__dev" title="Local development: Cloudflare Access is not in front of this server.">local dev</span>}
           {admin?.source === 'cloudflare-access' && <a href="/cdn-cgi/access/logout">Sign out</a>}
