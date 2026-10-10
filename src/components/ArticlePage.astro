@@ -20,10 +20,22 @@ const idx = siblings.findIndex((a) => a.slug === article.slug);
 const prev = idx > 0 ? siblings[idx - 1] : null;
 const next = idx >= 0 && idx < siblings.length - 1 ? siblings[idx + 1] : null;
 
-const introIdx = article.blocks.findIndex(
-  (b) => b.type === 'p' && !b.subhead && b.text !== article.dateline
-);
-const intro = introIdx >= 0 ? article.blocks[introIdx] : null;
+// CMS articles have their own dedicated subtitle field (doc.subtitle,
+// written in the editor's Subtitle box) — when a writer has filled it in,
+// it IS the intro, and nothing should be pulled out of the body to serve as
+// one instead. Legacy articles never have a subtitle (legacyArticles()
+// always sets it to ''), so this falls through to the original behavior —
+// the first plain paragraph doubling as the intro — exactly as before, for
+// every legacy article and any CMS article where the subtitle is empty.
+// Before this, a CMS article's subtitle was silently discarded on the
+// public page no matter what the writer typed into it, and a story with
+// only one paragraph (then nothing else) would render with an empty body:
+// its only paragraph got extracted into the intro slot and never put back.
+const introFromSubtitle = article.subtitle.trim();
+const introIdx = introFromSubtitle
+  ? -1
+  : article.blocks.findIndex((b) => b.type === 'p' && !b.subhead && b.text !== article.dateline);
+const introText = introFromSubtitle || (introIdx >= 0 ? (article.blocks[introIdx] as { text: string }).text : '');
 let bodyBlocks = introIdx >= 0 ? article.blocks.filter((_, i) => i !== introIdx) : article.blocks;
 
 // Reading journey: title, metadata, then a large photograph. The entry's first
@@ -56,7 +68,7 @@ if (ogLead && ogLead.source === 'cms') {
 
 <Base
   title={article.title}
-  description={(intro?.text ?? '').slice(0, 150)}
+  description={introText.slice(0, 150)}
   canonical={canonicalUrl}
   ogImage={og}
   current={article.path}
@@ -67,7 +79,7 @@ if (ogLead && ogLead.source === 'cms') {
       section={section}
       entry={article.order}
       title={article.title}
-      intro={intro?.text ?? ''}
+      intro={introText}
       dateline={article.dateline}
     />
 
