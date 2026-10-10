@@ -249,7 +249,7 @@ try {
     await page.keyboard.press('End');
     await page.keyboard.press('Enter');
     await page.keyboard.type('/embed');
-    await insertViaSlash(page, 'Embed');
+    await insertViaSlash(page, 'Video');
     await page.waitForSelector('.editor-embed__input', { timeout: 5000 });
     await page.fill('.editor-embed__input', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
     await page.keyboard.press('Enter');
@@ -379,7 +379,7 @@ try {
     await page.fill('#editor-title', 'Bad Embed');
     await page.click('.prose-editor');
     await page.keyboard.type('/embed');
-    await insertViaSlash(page, 'Embed');
+    await insertViaSlash(page, 'Video');
     await page.waitForSelector('.editor-embed__input', { timeout: 5000 });
     await page.fill('.editor-embed__input', 'http://www.youtube.com/watch?v=dQw4w9WgXcQ');
     await page.keyboard.press('Enter');
