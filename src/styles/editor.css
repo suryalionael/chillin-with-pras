@@ -394,6 +394,52 @@
   justify-content: flex-end;
 }
 
+/* Standard/Wide layout toggle — same hover-reveal pattern as the embed
+   block's "Change link" button (.editor-embed__edit). */
+.editor-image__layout {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  z-index: 2;
+  display: flex;
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  transition: opacity 0.15s var(--ease-out);
+}
+
+.editor-image__wrapper:hover .editor-image__layout,
+.editor-image__layout-btn:focus-visible {
+  opacity: 1;
+}
+
+.editor-image__layout-btn {
+  border: 0;
+  background: none;
+  color: rgba(255, 255, 255, 0.8);
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+}
+
+.editor-image__layout-btn.active {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
+.editor-image__layout-btn:hover {
+  color: #fff;
+}
+
+.editor-image__layout-btn:focus-visible {
+  outline: 2px solid var(--accent-warm);
+  outline-offset: -2px;
+}
+
 .editor-image__img {
   display: block;
   width: 100%;

@@ -88,7 +88,20 @@ if (ogLead && ogLead.source === 'cms') {
         {!hero.source || hero.source === 'legacy' ? (
           <Figure variant="single" files={[{ file: hero.file, alt: hero.alt || article.title }]} hero={true} />
         ) : (
-          <Figure variant="single" files={[{ imageId: hero.imageId, alt: hero.alt || article.title, caption: hero.caption, decorative: hero.decorative, size: hero.size }]} hero={true} isCms={true} />
+          // Same fix as ArticleBody.astro's own tone computation: respect
+          // the writer's own layout choice instead of Figure's 'wide'
+          // default. The hero slot bypasses ArticleBody entirely (this is a
+          // separate render call), so it needed the same fix independently
+          // — confirmed missing by a real published story whose first image
+          // was set to Standard, which correctly showed inset in the admin
+          // preview and incorrectly still rendered wide once published.
+          <Figure
+            variant="single"
+            files={[{ imageId: hero.imageId, alt: hero.alt || article.title, caption: hero.caption, decorative: hero.decorative, size: hero.size }]}
+            tone={hero.size === 'inset' ? 'inset-right' : 'wide'}
+            hero={true}
+            isCms={true}
+          />
         )}
       </div>
     )}
