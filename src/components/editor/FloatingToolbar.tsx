@@ -95,6 +95,19 @@ export function FloatingToolbar({ editor }: { editor: ReturnType<typeof useEdito
     editor.chain().focus().toggleBlockquote().run();
   };
 
+  // Poetry reuses the article subtitle's own italic typography (see
+  // editor.css .prose-editor p[data-style="poetry"] / ArticleBody.astro's
+  // .prose__poetry — both pull the same --fs-lead/ink-soft/italic values as
+  // ArticleHeader's .article-head__lead) for verse or quoted text set apart
+  // from regular prose, line breaks and all. Only offered on a plain
+  // paragraph — not inside a heading, list item or blockquote, each of
+  // which already has its own distinct typography.
+  const isPoetryActive = editor?.isActive('paragraph', { style: 'poetry' }) ?? false;
+  const handlePoetry = () => {
+    if (!editor) return;
+    editor.chain().focus().updateAttributes('paragraph', { style: isPoetryActive ? 'normal' : 'poetry' }).run();
+  };
+
   const isActive = (mark: string) => editor?.isActive(mark) ?? false;
   const isHeadingActive = (level: number) => editor?.isActive('heading', { level }) ?? false;
   const isQuoteActive = editor?.isActive('blockquote') ?? false;
@@ -103,6 +116,7 @@ export function FloatingToolbar({ editor }: { editor: ReturnType<typeof useEdito
 
   const canHeading = editor.can().toggleHeading({ level: 2 }) || editor.can().toggleHeading({ level: 3 });
   const canQuote = editor.can().toggleBlockquote();
+  const canPoetry = editor.isActive('paragraph');
 
   return (
     <div
@@ -136,6 +150,12 @@ export function FloatingToolbar({ editor }: { editor: ReturnType<typeof useEdito
       {canQuote && (
         <button type="button" className={`toolbar-btn ${isQuoteActive ? 'active' : ''}`} onClick={handleQuote} aria-pressed={isQuoteActive} aria-label="Quote">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" aria-hidden="true"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V21c0 3 4 3 4 3z"></path><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V21c0 3 4 3 4 3z"></path></svg>
+        </button>
+      )}
+
+      {canPoetry && (
+        <button type="button" className={`toolbar-btn ${isPoetryActive ? 'active' : ''}`} onClick={handlePoetry} aria-pressed={isPoetryActive} aria-label="Poetry style">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" aria-hidden="true"><path d="M4 7h11M4 12h7M4 17h9" strokeLinecap="round"/></svg>
         </button>
       )}
     </div>

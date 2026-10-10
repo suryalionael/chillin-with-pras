@@ -1,6 +1,7 @@
 import { Extension } from '@tiptap/core';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import TiptapParagraph from '@tiptap/extension-paragraph';
 import Placeholder from '@tiptap/extension-placeholder';
 import Link from '@tiptap/extension-link';
 import Suggestion from '@tiptap/suggestion';
@@ -39,13 +40,30 @@ interface StoryEditorProps {
   onSubtitleChange: (subtitle: string) => void;
 }
 
+// StarterKit's own Paragraph has no attrs — extended separately (StarterKit
+// disables its built-in one below) so a paragraph can carry style: 'normal'
+// | 'poetry', matching the schema (cms/schema.ts) attr of the same name.
+const Paragraph = TiptapParagraph.extend({
+  addAttributes() {
+    return {
+      style: {
+        default: 'normal',
+        parseHTML: (el) => (el.getAttribute('data-style') === 'poetry' ? 'poetry' : 'normal'),
+        renderHTML: (attrs) => (attrs.style === 'poetry' ? { 'data-style': 'poetry' } : {}),
+      },
+    };
+  },
+});
+
 const BASE_EXTENSIONS = [
   StarterKit.configure({
+    paragraph: false,
     heading: { levels: [2, 3] },
     bulletList: { keepMarks: true, keepAttributes: false },
     orderedList: { keepMarks: true, keepAttributes: false },
     link: false,
   }),
+  Paragraph,
   Placeholder.configure({
     placeholder: ({ node }) => {
       if (node.type.name === 'heading') return node.attrs.level === 2 ? 'Heading' : 'Subheading';

@@ -42,6 +42,8 @@ export interface ParagraphBlock {
   subhead?: boolean;
   /** CMS only: the same text with bold/italic/link formatting */
   inline?: Inline[];
+  /** CMS only: verse/quoted text in the article subtitle's italic typography */
+  poetry?: boolean;
 }
 export interface LegacyImageBlock {
   type: 'img';
@@ -229,7 +231,15 @@ export function docToBlocks(doc: StoryDocument, imageDims: ImageDimensions = {})
     switch (b.type) {
       case 'paragraph': {
         const inline = toInline(b.content);
-        if (!isBlank(inline)) blocks.push({ type: 'p', text: plainText(inline), inline });
+        // b.attrs?. , not b.attrs. : fetchPublishedCmsStoriesFromSnapshotFile
+        // (build-content.ts) reads .cms/snapshot.json and only shallow-checks
+        // title/body exist — it does not re-run this through
+        // parseStoryDocument, so a snapshot committed before this attribute
+        // existed reaches here with no attrs at all. Crashing the entire
+        // build over one missing optional attribute on old content would be
+        // exactly the kind of regression this schema change should never
+        // cause.
+        if (!isBlank(inline)) blocks.push({ type: 'p', text: plainText(inline), inline, ...(b.attrs?.style === 'poetry' ? { poetry: true } : {}) });
         break;
       }
       case 'heading': {

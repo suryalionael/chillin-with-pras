@@ -289,6 +289,16 @@
   margin: 0 0 1.6em;
 }
 
+/* Poetry style — the same italic/ink-soft treatment as the article subtitle
+   (ArticleHeader.astro's .article-head__lead), for verse or quoted text set
+   apart from regular prose. Toggled from the floating toolbar. */
+.prose-editor p[data-style="poetry"] {
+  font-style: italic;
+  font-size: 1.35rem;
+  line-height: 1.65;
+  color: var(--ink-soft);
+}
+
 .prose-editor h2 {
   font-family: var(--serif);
   font-weight: 600;
