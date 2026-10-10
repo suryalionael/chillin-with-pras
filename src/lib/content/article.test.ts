@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { assembleArticles, docToBlocks, formatDateline, legacyArticles, plainText, publishedToArticle, type ArticleBlock, type RawSite } from './article.ts';
+import { assembleArticles, docToBlocks, formatDateline, legacyArticles, newestFirst, plainText, publishedToArticle, type ArticleBlock, type RawSite } from './article.ts';
 import { parseStoryDocument, type StoryDocument } from '../cms/schema.ts';
 import type { PublishedStory } from '../cms/db.ts';
 
@@ -99,6 +99,22 @@ test('assembleArticles: legacy is untouched, CMS continues each section\'s numbe
   assert.deepEqual(cms.map((x) => [x.slug, x.order]), [['first-new', 31], ['a-show-piece', 6], ['second-new', 32]]);
   assert.equal(all.length, 38);
   assert.equal(new Set(all.map((x) => x.path)).size, all.length); // no duplicate URLs
+});
+
+test('newestFirst: reverses to newest-first without touching the ascending reading order', () => {
+  const legacy = legacyArticles(site);
+  const a = story({ id: '00000000-0000-4000-8000-00000000000a', slug: 'first-new', publishedAt: '2026-01-05' });
+  const b = story({ id: '00000000-0000-4000-8000-00000000000b', slug: 'second-new', publishedAt: '2026-03-01' });
+  const observe = assembleArticles(legacy, [a, b]).filter((x) => x.section === 'observe');
+
+  // Source array stays ascending (ArticleNav's prev/next, "Entry N" numbering).
+  assert.deepEqual(observe.map((x) => x.order), [...observe.map((x) => x.order)].sort((x, y) => x - y));
+
+  const display = newestFirst(observe);
+  assert.deepEqual(display.map((x) => x.slug).slice(0, 2), ['second-new', 'first-new']);
+  assert.deepEqual(display.map((x) => x.order), [...display.map((x) => x.order)].sort((x, y) => y - x));
+  // original array is untouched, not mutated in place
+  assert.notEqual(observe[0]!.slug, display[0]!.slug);
 });
 
 test('a CMS slug that collides with a legacy or another CMS slug is a build error', () => {

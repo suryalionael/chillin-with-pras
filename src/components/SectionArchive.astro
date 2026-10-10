@@ -5,11 +5,15 @@ import ArchiveList from '../components/ArchiveList.astro';
 import Photo from '../components/Photo.astro';
 import { ratio } from '../lib/images';
 import { getArticlesInSection } from '../lib/cms/build-content.ts';
+import { newestFirst } from '../lib/content/article.ts';
 import { SECTIONS, sectionCover, sectionDesc, two } from '../lib/site.mjs';
 
 const { section } = Astro.props;
 const sec = SECTIONS[section];
-const articles = await getArticlesInSection(section);
+// getArticlesInSection is ascending (oldest first) — that's the reading
+// sequence ArticleNav's prev/next depends on. The archive listing itself
+// should show newest first, so it gets its own sorted copy.
+const articles = newestFirst(await getArticlesInSection(section));
 const count = articles.length;
 const cover = sectionCover(section);
 const coverAr = ratio(cover).toFixed(4);

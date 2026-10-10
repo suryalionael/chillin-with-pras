@@ -314,3 +314,21 @@ export function assembleArticles(legacy: Article[], published: PublishedStory[],
   }
   return [...legacy, ...cms];
 }
+
+/**
+ * Newest-first order for public listings (section archives, homepage feeds)
+ * — readers expect the most recent entry at the top. Sorts by `order`, not
+ * `dateISO`: 6 of the 35 legacy articles (all 5 "show" entries, plus one
+ * "observe" entry) have no dateISO in site.json at all, so sorting by date
+ * directly would scatter them to the wrong end of the list. `order` has no
+ * such gaps — it's assigned, for every article, from the same
+ * publishedAt-then-id chronological sequence dateISO would give if it were
+ * complete (see assembleArticles above) — so it is itself "actual
+ * publication order," just never missing. Descending order is the only
+ * change here: the reading-sequence numbering ("Entry 12") and
+ * ArticleNav's prev/next both depend on `order` staying ascending
+ * everywhere else, so this returns a new array rather than touching it.
+ */
+export function newestFirst(articles: Article[]): Article[] {
+  return [...articles].sort((a, b) => b.order - a.order);
+}
