@@ -1,5 +1,177 @@
 {
-  "revision": 9,
-  "generatedAt": "2026-10-06T20:48:05.638Z",
-  "stories": []
+  "revision": 10,
+  "generatedAt": "2026-10-10T16:05:13.812Z",
+  "stories": [
+    {
+      "id": "8f19b402-0965-4811-a85c-d85001d82b6b",
+      "section": "observe",
+      "slug": "test",
+      "publishedAt": "2026-10-10",
+      "pubUpdatedAt": "2026-10-10T16:05:13.560Z",
+      "document": {
+        "version": 1,
+        "title": "Test",
+        "subtitle": "",
+        "dateline": "",
+        "featuredImageId": null,
+        "body": {
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "asjdhasdjkhdajkshkads"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "askjkjdsahkjasdkj"
+                }
+              ]
+            },
+            {
+              "type": "blockquote",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "akjhjkasdkjadsksd"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "aasdhgjhasgjasg"
+                }
+              ]
+            },
+            {
+              "type": "horizontalRule"
+            },
+            {
+              "type": "bulletList",
+              "content": [
+                {
+                  "type": "listItem",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "amsjhasgjhgdashj"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "ashdkjahskjds"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "orderedList",
+              "content": [
+                {
+                  "type": "listItem",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "ashasdjhgdasjgdsajh"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "asdkjhasdajdshg"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "asdkjasdjkhakjsdh"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "akdsjhasjkdhkdsaj"
+                }
+              ]
+            },
+            {
+              "type": "image",
+              "attrs": {
+                "imageId": "8f64876a-e373-4a11-ad20-61778f62e283",
+                "alt": "DSC_1196",
+                "caption": "",
+                "decorative": false,
+                "size": "wide"
+              }
+            },
+            {
+              "type": "paragraph"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "images": {
+    "8f64876a-e373-4a11-ad20-61778f62e283": {
+      "width": 6048,
+      "height": 4024
+    }
+  }
 }
