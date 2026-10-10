@@ -84,7 +84,20 @@ let singles = 0;
       }
 
       // figure
-      const tone = item.variant === 'single' ? tones[singles++ % tones.length] : 'wide';
+      // A CMS writer's own layout choice (the image's `size` attribute —
+      // 'wide' or 'inset', set from the editor) takes priority for a single
+      // CMS image; the auto-rotating wide/inset-left/inset-right pattern
+      // below is otherwise what decides a legacy image's tone, since legacy
+      // images carry no layout choice at all. This matches the admin
+      // preview (PreviewRenderer.tsx's PreviewImage), which already read
+      // `size` correctly — this file never did, so a writer's chosen layout
+      // always looked right in preview and was silently ignored on publish.
+      let tone: string;
+      if (item.variant === 'single') {
+        tone = item.isCms ? (item.files[0].size === 'inset' ? 'inset-right' : 'wide') : tones[singles++ % tones.length];
+      } else {
+        tone = 'wide';
+      }
       return (
         <div class="prose__figure">
           <Figure variant={item.variant} files={item.files} tone={tone} isCms={item.isCms} />
