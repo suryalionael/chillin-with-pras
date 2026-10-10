@@ -22,7 +22,7 @@
   "vars": {
     // Non-secret configuration. Authorization is enforced server-side against this value.
     // Writer allowlist (comma/space separated). Legacy ADMIN_EMAIL stays as a safe rename.
-    "ADMIN_EMAILS": "suryalionael@gmail.com",
+    "ADMIN_EMAILS": "suryalionael@gmail.com, doubleohcue@icloud.com",
     "ADMIN_EMAIL": "suryalionael@gmail.com",
     // Cloudflare Access (pending configuration): e.g. "yourteam.cloudflareaccess.com"
     "ACCESS_TEAM_DOMAIN": "",
