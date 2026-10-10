@@ -29,6 +29,19 @@ test('a document using every supported concept is accepted', () => {
   assert.equal(value.body.content.length, 10);
 });
 
+test('paragraph style: old documents with no attrs at all default to normal, poetry round-trips', () => {
+  // A paragraph literal with no `attrs` key, exactly how every document
+  // wrote paragraphs before this field existed.
+  const plain = ok(doc([{ type: 'paragraph', content: [{ type: 'text', text: 'x' }] }]));
+  assert.deepEqual((plain.body.content[0] as { attrs: { style: string } }).attrs, { style: 'normal' });
+
+  const poem = ok(doc([{ type: 'paragraph', attrs: { style: 'poetry' }, content: [{ type: 'text', text: 'Two roads diverged' }, { type: 'hardBreak' }, { type: 'text', text: 'in a yellow wood' }] }]));
+  assert.deepEqual((poem.body.content[0] as { attrs: { style: string } }).attrs, { style: 'poetry' });
+  assert.equal(serializeDocument(poem).includes('poetry'), true);
+
+  bad(doc([{ type: 'paragraph', attrs: { style: 'verse' }, content: [] }])); // not a real option
+});
+
 test('empty draft (no title, no content) is valid but not publishable', () => {
   const value = ok(emptyStoryDocument());
   assert.deepEqual(publishIssues(value).map((i) => i.path).sort(), ['body', 'title']);
@@ -44,7 +57,10 @@ test('unknown attributes and keys are dropped, not stored', () => {
     { type: 'image', attrs: { imageId: IMG, alt: 'a', style: 'position:fixed' } },
   ], { extraTopLevel: 1 }));
   const s = serializeDocument(value);
-  for (const needle of ['evil', 'onclick', 'target', 'rel', 'style', 'extraTopLevel', 'class']) assert.equal(s.includes(needle), false, needle);
+  // 'style' itself is no longer a safe substring to check: it's now a real,
+  // whitelisted paragraph attr (poetry/normal). Check for the actual
+  // injected value instead — that's what this test is really guarding.
+  for (const needle of ['evil', 'onclick', 'target', 'rel', 'position:fixed', 'extraTopLevel', 'class']) assert.equal(s.includes(needle), false, needle);
 });
 
 test('links are limited to safe protocols', () => {

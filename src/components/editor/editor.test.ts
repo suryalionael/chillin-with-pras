@@ -26,7 +26,7 @@ describe('editor document serialization', () => {
       body: {
         type: 'doc',
         content: [
-          { type: 'paragraph', content: [{ type: 'text', text: 'Hello world' }] },
+          { type: 'paragraph', attrs: { style: 'normal' }, content: [{ type: 'text', text: 'Hello world' }] },
         ],
       },
     };
@@ -44,6 +44,7 @@ describe('editor document serialization', () => {
         content: [
           {
             type: 'paragraph',
+            attrs: { style: 'normal' },
             content: [
               { type: 'text', text: 'Bold ', marks: [{ type: 'bold' }] },
               { type: 'text', text: 'italic', marks: [{ type: 'italic' }] },
@@ -67,6 +68,7 @@ describe('editor document serialization', () => {
         content: [
           {
             type: 'paragraph',
+            attrs: { style: 'normal' },
             content: [
               { type: 'text', text: 'Link', marks: [{ type: 'link', attrs: { href: 'https://example.com' } }] },
             ],
@@ -118,8 +120,8 @@ describe('editor document serialization', () => {
           {
             type: 'bulletList',
             content: [
-              { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Item 1' }] }] },
-              { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Item 2' }] }] },
+              { type: 'listItem', content: [{ type: 'paragraph', attrs: { style: 'normal' }, content: [{ type: 'text', text: 'Item 1' }] }] },
+              { type: 'listItem', content: [{ type: 'paragraph', attrs: { style: 'normal' }, content: [{ type: 'text', text: 'Item 2' }] }] },
             ],
           },
         ],
@@ -140,7 +142,7 @@ describe('editor document serialization', () => {
           {
             type: 'orderedList',
             content: [
-              { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'First' }] }] },
+              { type: 'listItem', content: [{ type: 'paragraph', attrs: { style: 'normal' }, content: [{ type: 'text', text: 'First' }] }] },
             ],
           },
         ],
@@ -160,7 +162,7 @@ describe('editor document serialization', () => {
           {
             type: 'blockquote',
             content: [
-              { type: 'paragraph', content: [{ type: 'text', text: 'A quote' }] },
+              { type: 'paragraph', attrs: { style: 'normal' }, content: [{ type: 'text', text: 'A quote' }] },
             ],
           },
         ],
@@ -235,8 +237,8 @@ describe('editor document serialization', () => {
       body: {
         type: 'doc',
         content: [
-          { type: 'paragraph', content: [] },
-          { type: 'paragraph', content: [{ type: 'text', text: 'Not empty' }] },
+          { type: 'paragraph', attrs: { style: 'normal' }, content: [] },
+          { type: 'paragraph', attrs: { style: 'normal' }, content: [{ type: 'text', text: 'Not empty' }] },
         ],
       },
     };
@@ -257,11 +259,11 @@ describe('editor document serialization', () => {
               {
                 type: 'listItem',
                 content: [
-                  { type: 'paragraph', content: [{ type: 'text', text: 'Parent' }] },
+                  { type: 'paragraph', attrs: { style: 'normal' }, content: [{ type: 'text', text: 'Parent' }] },
                   {
                     type: 'bulletList',
                     content: [
-                      { type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Child' }] }] },
+                      { type: 'listItem', content: [{ type: 'paragraph', attrs: { style: 'normal' }, content: [{ type: 'text', text: 'Child' }] }] },
                     ],
                   },
                 ],
@@ -286,6 +288,7 @@ describe('editor document serialization', () => {
         content: [
           {
             type: 'paragraph',
+            attrs: { style: 'normal' },
             content: [
               { type: 'text', text: 'Line 1' },
               { type: 'hardBreak' },

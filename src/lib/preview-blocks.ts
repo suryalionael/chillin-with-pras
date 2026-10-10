@@ -17,6 +17,7 @@ export interface ParagraphBlock {
   text: string;
   subhead?: boolean;
   inline?: Inline[];
+  poetry?: boolean;
 }
 export interface CmsImageBlock {
   type: 'img';
@@ -121,7 +122,7 @@ export function docToBlocks(doc: any): ArticleBlock[] {
     switch (b.type) {
       case 'paragraph': {
         const inline = toInline(b.content);
-        if (!isBlank(inline)) blocks.push({ type: 'p', text: plainText(inline), inline });
+        if (!isBlank(inline)) blocks.push({ type: 'p', text: plainText(inline), inline, ...(b.attrs?.style === 'poetry' ? { poetry: true } : {}) });
         break;
       }
       case 'heading': {

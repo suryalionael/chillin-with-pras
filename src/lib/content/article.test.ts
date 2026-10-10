@@ -80,6 +80,32 @@ test('docToBlocks: an image gets its real width/height when the snapshot has the
   assert.equal('height' in withoutDims[0]!, false);
 });
 
+test('docToBlocks: poetry paragraphs are flagged, normal ones carry no poetry key', () => {
+  const doc = parse({
+    version: 1, title: 't', subtitle: '', dateline: '', featuredImageId: null,
+    body: { type: 'doc', content: [
+      { type: 'paragraph', attrs: { style: 'poetry' }, content: [{ type: 'text', text: 'verse one' }] },
+      { type: 'paragraph', content: [{ type: 'text', text: 'ordinary prose' }] },
+    ] },
+  });
+  const blocks = docToBlocks(doc);
+  assert.equal((blocks[0] as { poetry?: boolean }).poetry, true);
+  assert.equal('poetry' in blocks[1]!, false);
+});
+
+test('docToBlocks: a paragraph with no attrs at all (pre-dates the style field) does not crash', () => {
+  // Reproduces a real regression: fetchPublishedCmsStoriesFromSnapshotFile
+  // (build-content.ts) reads .cms/snapshot.json without re-running it
+  // through parseStoryDocument, so content published before the `style`
+  // attribute existed reaches docToBlocks with no `attrs` key at all —
+  // confirmed by this exact shape crashing the build before the fix
+  // (b.attrs.style on an undefined attrs).
+  const legacyShapeDoc = { version: 1 as const, title: 't', subtitle: '', dateline: '', featuredImageId: null, body: { type: 'doc' as const, content: [{ type: 'paragraph' as const, content: [{ type: 'text' as const, text: 'old content' }] }] } };
+  const blocks = docToBlocks(legacyShapeDoc as unknown as StoryDocument);
+  assert.equal(blocks[0]!.type, 'p');
+  assert.equal('poetry' in blocks[0]!, false);
+});
+
 test('published story becomes an Article at the standard public path', () => {
   const a = publishedToArticle(story(), 31);
   assert.deepEqual([a.source, a.path, a.section, a.order, a.title, a.subtitle, a.dateISO], ['cms', '/to-observe-and-report/my-new-story/', 'observe', 31, 'My New Story', 'A subtitle', '2026-09-20']);

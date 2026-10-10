@@ -31,10 +31,11 @@ let singles = 0;
           }
           return <h2 class="prose__text subhead">{item.text}</h2>;
         }
+        const pClass = item.poetry ? 'prose__text prose__p prose__poetry' : 'prose__text prose__p';
         if (item.inline) {
-          return <p class="prose__text prose__p"><InlineContent inline={item.inline} /></p>;
+          return <p class={pClass}><InlineContent inline={item.inline} /></p>;
         }
-        return <p class="prose__text prose__p">{item.text}</p>;
+        return <p class={pClass}>{item.text}</p>;
       }
 
       if (item.type === 'subheading') {
@@ -113,6 +114,15 @@ let singles = 0;
     line-height: 1.85;
     margin-bottom: 1.5em;
     color: var(--ink);
+  }
+
+  /* Poetry — the article subtitle's own italic typography (ArticleHeader's
+     .article-head__lead), for verse or quoted text set apart from prose. */
+  .prose__poetry {
+    font-style: italic;
+    font-size: var(--fs-lead);
+    line-height: 1.65;
+    color: var(--ink-soft);
   }
 
   .prose__figure {
@@ -228,6 +238,11 @@ let singles = 0;
     .prose__p {
       font-size: 1.28rem;
       line-height: 1.8;
+    }
+
+    .prose__poetry {
+      font-size: 1.28rem;
+      line-height: 1.6;
     }
 
     .subhead {

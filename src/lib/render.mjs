@@ -2,7 +2,7 @@
 // of paragraphs, figure compositions, and pass-through CMS blocks.
 
 /**
- * @typedef {{ type: 'paragraph', text: string, subhead?: boolean, dateline?: boolean, inline?: Array }} ParagraphItem
+ * @typedef {{ type: 'paragraph', text: string, subhead?: boolean, dateline?: boolean, inline?: Array, poetry?: boolean }} ParagraphItem
  * @typedef {{ type: 'figure', files: { file: string; alt: string }[], variant: 'single'|'pair'|'cluster' }} FigureItem
  * @typedef {{ type: 'figure', files: { imageId: string; alt: string; caption: string; decorative: boolean; size: 'wide'|'inset' }[], variant: 'single'|'pair'|'cluster', isCms: true }} CmsFigureItem
  * @typedef {{ type: 'subheading', text: string, inline: Array }} SubheadingItem
@@ -35,6 +35,7 @@ export function renderSequence(blocks, dateline = '') {
         subhead: !!b.subhead,
         dateline: b.text === dateline,
         inline: b.inline,
+        poetry: !!b.poetry,
       });
       i++;
       continue;

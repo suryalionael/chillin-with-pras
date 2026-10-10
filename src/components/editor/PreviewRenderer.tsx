@@ -39,7 +39,15 @@ function PreviewParagraph({ block }: { block: ArticleBlock & { type: 'p' } }) {
       </h2>
     );
   }
-  return <p className="prose__text prose__p">{block.inline ? renderInline(block.inline) : block.text}</p>;
+  // Poetry: the article subtitle's own italic typography (ArticleHeader's
+  // .article-head__lead / ArticleBody's .prose__poetry on the public site).
+  // Inline, not a class, matching this component's existing convention
+  // (PreviewSubheading etc.) — nothing in the admin's own stylesheet defines
+  // .prose__p at all, so a class here wouldn't connect to anything.
+  const poetryStyle: React.CSSProperties | undefined = block.poetry
+    ? { fontStyle: 'italic', fontSize: 'var(--fs-lead)', lineHeight: 1.65, color: 'var(--ink-soft)' }
+    : undefined;
+  return <p className="prose__text prose__p" style={poetryStyle}>{block.inline ? renderInline(block.inline) : block.text}</p>;
 }
 
 function PreviewSubheading({ block }: { block: SubheadingBlock }) {
