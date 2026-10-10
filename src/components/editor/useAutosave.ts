@@ -3,6 +3,25 @@ import type { StoryDocument } from '../../lib/cms/schema.ts';
 
 type SaveResult = { draftRev: number; draftUpdatedAt: string } | null;
 
+export interface SaveErrorBody {
+  error?: { message?: string; issues?: { path: string; message: string }[] };
+}
+
+/**
+ * Turns a failed save response into the message actually shown to the
+ * writer. Pulled out as a pure function (no fetch, no React) specifically so
+ * it can be unit-tested without a browser/DOM harness — this project has no
+ * React testing setup, and the bug this fixes (every non-409 save failure
+ * collapsing to the single string "Save failed", discarding the server's own
+ * explanation) is a pure data transformation, not something that needs one.
+ */
+export function describeSaveError(status: number, body: SaveErrorBody | null): string {
+  const issues = body?.error?.issues;
+  if (issues && issues.length > 0) return issues.map((i) => i.message).join(' ');
+  if (body?.error?.message) return body.error.message;
+  return `Save failed (${status}).`;
+}
+
 interface UseAutosaveOptions {
   storyId: string;
   getDoc: () => StoryDocument;
@@ -60,9 +79,21 @@ export function useAutosave({
       return result;
     } catch (err) {
       pendingRef.current = false;
-      if (err instanceof Response && err.status === 409) {
-        const data = (await err.json()) as { error?: { currentRev?: number } };
-        onConflict(data.error?.currentRev ?? getRev());
+      if (err instanceof Response) {
+        if (err.status === 409) {
+          const data = (await err.json().catch(() => null)) as { error?: { currentRev?: number } } | null;
+          onConflict(data?.error?.currentRev ?? getRev());
+          return null;
+        }
+        // Read the actual reason instead of a generic "Save failed" — a 422
+        // here almost always names exactly which block/attribute is invalid
+        // (see schema.ts's publishIssues/parseStoryDocument), and silently
+        // dropping that was the root cause of saves that looked unexplainably
+        // stuck: the editor would accept content the server then rejected
+        // (e.g. an http:// embed link, valid-looking in the editor's own
+        // preview) with no way to tell what to fix.
+        const data = (await err.json().catch(() => null)) as SaveErrorBody | null;
+        onError(describeSaveError(err.status, data));
       } else {
         onError(err instanceof Error ? err.message : 'Save failed');
       }
