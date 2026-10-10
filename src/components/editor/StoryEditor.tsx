@@ -505,17 +505,64 @@ export function StoryEditor({ storyId, initialDoc, initialRev, onSave, onTitleCh
 
   const handleConflictResolve = useCallback(async (useLocal: boolean) => {
     if (!showConflict) return;
+    cancelSave();
+
     if (useLocal) {
-      await saveWithDebounce(true);
-    } else {
-      const fresh = await onSave(doc, showConflict.currentRev);
-      if (fresh) {
-        setRev(fresh.draftRev);
-        setStatus('saved');
+      // "Keep my changes": force the local edits to become current. Must
+      // retry with the revision the conflict just reported, not the stale
+      // one that caused it — saveWithDebounce(true) reads rev from state,
+      // which this function never updated, so it used to retry with the
+      // exact same stale baseRev, 409 again, and silently re-close the
+      // dialog without saving anything or telling the user.
+      setStatus('saving');
+      try {
+        const saved = await onSave({ ...doc, title, subtitle }, showConflict.currentRev);
+        if (saved) {
+          setRev(saved.draftRev);
+          setStatus('saved');
+          setTimeout(() => setStatus('idle'), 2000);
+        }
+        setShowConflict(null);
+      } catch (e) {
+        if (e instanceof Response && e.status === 409) {
+          // Someone else saved again in the meantime — show the new
+          // conflict instead of pretending this one resolved.
+          const data = (await e.json().catch(() => null)) as ApiBody | null;
+          setShowConflict({ currentRev: data?.error?.currentRev ?? showConflict.currentRev });
+        } else {
+          setError(e instanceof Error ? e.message : 'Save failed');
+          setStatus('error');
+          setShowConflict(null);
+        }
       }
+      return;
+    }
+
+    // "Load server version": discard the local edits and load what's
+    // actually saved on the server. The previous implementation did the
+    // opposite — it re-saved the stale local `doc` using the server's
+    // current revision as baseRev, which overwrote the newer server content
+    // with this tab's stale copy while claiming to load the server's.
+    try {
+      const res = await fetch(`/api/admin/stories/${storyId}/`, { credentials: 'same-origin' });
+      if (!res.ok) throw res;
+      const data = (await res.json()) as { story: { draft: StoryDocument; draftRev: number } };
+      const fresh = data.story.draft;
+      setDoc(fresh);
+      setTitle(fresh.title);
+      setSubtitle(fresh.subtitle);
+      onTitleChange(fresh.title);
+      onSubtitleChange(fresh.subtitle);
+      setRev(data.story.draftRev);
+      editor?.commands.setContent(fresh.body);
+      setStatus('saved');
+      setTimeout(() => setStatus('idle'), 2000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load the server version.');
+      setStatus('error');
     }
     setShowConflict(null);
-  }, [showConflict, doc, onSave, saveWithDebounce]);
+  }, [showConflict, doc, title, subtitle, onSave, storyId, editor, onTitleChange, onSubtitleChange, cancelSave]);
 
   const handleImageSelect = useCallback((image: { id: string; filename: string }) => {
     if (!editor || !pendingImageRange) return;
