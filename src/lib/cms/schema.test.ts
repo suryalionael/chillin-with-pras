@@ -59,6 +59,17 @@ test('embeds must be https without credentials', () => {
   bad(doc([{ type: 'embed', attrs: { url: 'http://insecure.example.com' } }]));
 });
 
+test('a freshly-inserted embed with no URL yet is a valid draft, but cannot publish', () => {
+  // Reproduces the save-failure bug: inserting an embed block creates one
+  // with an empty url before the writer has typed anything into it. That
+  // state must be saveable (autosave can fire in that window) — only
+  // publishing should require the url to actually be filled in.
+  const value = ok(doc([{ type: 'embed', attrs: { url: '' } }]));
+  assert.equal(value.body.content[0]!.type, 'embed');
+  const issues = publishIssues(value);
+  assert.ok(issues.some((i) => i.path === 'body.content.0' && /embed/i.test(i.message)), JSON.stringify(issues));
+});
+
 test('structural limits', () => {
   bad(doc([{ type: 'heading', attrs: { level: 1 }, content: [] }]));
   bad(doc([{ type: 'heading', attrs: { level: 4 }, content: [] }]));
