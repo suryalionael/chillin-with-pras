@@ -71,7 +71,13 @@ function PreviewImage({ block }: { block: CmsImageBlock }) {
               style={{ aspectRatio: '16 / 9' }}
             />
           </div>
-          {block.caption && <figcaption className="figure__hand hand">{block.caption}</figcaption>}
+          {block.caption && (
+            // textAlign inline, matching the public site's .figure__hand
+            // (Figure.astro) — nothing in the admin's own stylesheet reaches
+            // this className, same as every other prose__/figure__ class
+            // here (see PreviewParagraph's poetry handling for the same note).
+            <figcaption className="figure__hand hand" style={{ textAlign: 'center', marginTop: '0.7rem' }}>{block.caption}</figcaption>
+          )}
         </div>
       </figure>
     </div>
