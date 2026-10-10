@@ -507,6 +507,58 @@
   outline-offset: 2px;
 }
 
+.editor-embed__error {
+  margin-top: 0.6rem;
+  text-align: center;
+  font-family: var(--sans);
+  font-size: 0.875rem;
+  color: #a33;
+}
+
+/* A valid https link the schema will accept but that isn't a recognized
+   YouTube/Vimeo URL — renders as a plain link on the public site, so this
+   previews that instead of looking like a broken/unfinished embed. */
+.editor-embed__link-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: var(--paper-deep);
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  font-family: var(--sans);
+  font-size: 0.95rem;
+}
+
+.editor-embed__link-preview a {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--accent-warm);
+}
+
+.editor-embed__link-note {
+  flex: none;
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+}
+
+.editor-embed__link-preview .editor-embed__edit {
+  position: static;
+  flex: none;
+  opacity: 1;
+  background: var(--paper);
+  color: var(--ink-soft);
+  border: 1px solid var(--line-strong);
+}
+
+.editor-embed__link-preview .editor-embed__edit:hover {
+  background: var(--paper-deep);
+  color: var(--ink);
+}
+
 /* Floating toolbar — small pill that appears above a selection */
 .floating-toolbar {
   position: fixed;

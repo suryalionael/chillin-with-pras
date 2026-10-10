@@ -1,5 +1,5 @@
 import { Node, mergeAttributes } from '@tiptap/core';
-import { parseEmbedUrl } from '../../lib/content/embed-url.ts';
+import { isSafeEmbedUrl, parseEmbedUrl } from '../../lib/content/embed-url.ts';
 
 export interface EmbedOptions {
   HTMLAttributes: Record<string, any>;
@@ -61,6 +61,18 @@ export const Embed = Node.create<EmbedOptions>({
       // deleting the whole block. `editing` reopens the input on demand via
       // the "Change link" button, independent of whether a URL is already set.
       let editing = !node.attrs.url;
+      // Set by commit() when the URL the user just entered fails validation —
+      // shown inline until they change the input or successfully commit, so a
+      // bad link is explained right where it was typed instead of surfacing
+      // as an opaque "Save failed" much later. See embed-url.ts: this is the
+      // exact check the server runs when the document is saved, so nothing
+      // that would fail here can fail silently at save time instead.
+      let error: string | null = null;
+      // What the user had typed when validation rejected it — re-rendering
+      // after a failed commit() otherwise reset the input to the node's
+      // still-empty/unchanged attrs.url, silently discarding what they'd
+      // just typed and making them retype the whole thing from scratch.
+      let pendingValue: string | null = null;
 
       const dom = document.createElement('div');
       dom.contentEditable = 'false';
@@ -76,17 +88,10 @@ export const Embed = Node.create<EmbedOptions>({
         editButton = null;
 
         const parsed = n.attrs.url ? parseEmbedUrl(n.attrs.url) : null;
-        if (parsed && !editing) {
+        const committedButUnrecognized = !parsed && n.attrs.url && isSafeEmbedUrl(n.attrs.url);
+
+        if ((parsed || committedButUnrecognized) && !editing) {
           dom.classList.add('editor-embed--live');
-          const frame = document.createElement('div');
-          frame.className = 'editor-embed__frame';
-          const iframe = document.createElement('iframe');
-          iframe.src = parsed.embedSrc;
-          iframe.loading = 'lazy';
-          iframe.title = 'Embedded content';
-          iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
-          iframe.allowFullscreen = true;
-          frame.appendChild(iframe);
 
           const btn = document.createElement('button');
           btn.type = 'button';
@@ -97,12 +102,43 @@ export const Embed = Node.create<EmbedOptions>({
           btn.addEventListener('mousedown', (e) => {
             e.preventDefault();
             editing = true;
+            error = null;
             render(current);
           });
-          frame.appendChild(btn);
           editButton = btn;
 
-          dom.appendChild(frame);
+          if (parsed) {
+            const frame = document.createElement('div');
+            frame.className = 'editor-embed__frame';
+            const iframe = document.createElement('iframe');
+            iframe.src = parsed.embedSrc;
+            iframe.loading = 'lazy';
+            iframe.title = 'Embedded content';
+            iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+            iframe.allowFullscreen = true;
+            frame.appendChild(iframe);
+            frame.appendChild(btn);
+            dom.appendChild(frame);
+          } else {
+            // A valid https link the schema accepts (ArticleBody.astro's
+            // fallback) but that isn't a recognized YouTube/Vimeo URL — it
+            // will publish as a plain link, not a player, so show that
+            // plainly rather than silently looping back to an empty input.
+            const link = document.createElement('div');
+            link.className = 'editor-embed__link-preview';
+            const a = document.createElement('a');
+            a.href = n.attrs.url;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.textContent = n.attrs.url;
+            link.appendChild(a);
+            const note = document.createElement('span');
+            note.className = 'editor-embed__link-note';
+            note.textContent = 'Not a recognized video link — this will show as a plain link.';
+            link.appendChild(note);
+            link.appendChild(btn);
+            dom.appendChild(link);
+          }
           return;
         }
 
@@ -110,10 +146,12 @@ export const Embed = Node.create<EmbedOptions>({
         input.type = 'text';
         input.className = 'editor-embed__input';
         input.placeholder = 'Paste a YouTube or Vimeo link, then press Enter';
-        input.value = n.attrs.url ?? '';
+        input.value = pendingValue ?? n.attrs.url ?? '';
         const cancelToLive = () => {
-          if (!parsed) return false;
+          if (!parsed && !committedButUnrecognized) return false;
           editing = false;
+          error = null;
+          pendingValue = null;
           render(current);
           return true;
         };
@@ -127,11 +165,29 @@ export const Embed = Node.create<EmbedOptions>({
             cancelToLive();
             return;
           }
+          if (!isSafeEmbedUrl(value)) {
+            error = value.startsWith('http://')
+              ? 'Use an https link — http:// links are blocked by browsers once published.'
+              : 'Enter a valid https link.';
+            pendingValue = value;
+            render(current);
+            return;
+          }
           const pos = typeof getPos === 'function' ? getPos() : null;
           if (pos == null) return;
           editing = false;
+          error = null;
+          pendingValue = null;
           editor.view.dispatch(editor.view.state.tr.setNodeMarkup(pos, undefined, { ...current.attrs, url: value }));
         };
+        input.addEventListener('input', () => {
+          if (error) {
+            error = null;
+            pendingValue = null;
+            errorEl?.remove();
+            errorEl = null;
+          }
+        });
         input.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
@@ -139,13 +195,28 @@ export const Embed = Node.create<EmbedOptions>({
           } else if (e.key === 'Escape') {
             e.preventDefault();
             input.value = current.attrs.url ?? '';
+            error = null;
+            pendingValue = null;
             if (!cancelToLive()) input.blur();
           }
         });
         input.addEventListener('blur', commit);
         dom.appendChild(input);
         activeInput = input;
-        requestAnimationFrame(() => input.focus());
+
+        let errorEl: HTMLParagraphElement | null = null;
+        if (error) {
+          errorEl = document.createElement('p');
+          errorEl.className = 'editor-embed__error';
+          errorEl.setAttribute('role', 'alert');
+          errorEl.textContent = error;
+          dom.appendChild(errorEl);
+        }
+
+        requestAnimationFrame(() => {
+          input.focus();
+          if (error) input.select();
+        });
       };
 
       render(node);
