@@ -35,7 +35,14 @@ export const Embed = Node.create<EmbedOptions>({
       'div',
       mergeAttributes({ 'data-embed': '', 'data-url': url, class: 'editor-embed' }),
       parsed
-        ? ['div', { class: 'editor-embed__frame' }, ['iframe', { src: parsed.embedSrc, title: 'Embedded content', loading: 'lazy' }]]
+        ? [
+            'div',
+            {
+              class: parsed.height ? 'editor-embed__frame editor-embed__frame--fixed' : 'editor-embed__frame',
+              style: parsed.height ? `height:${parsed.height}px` : undefined,
+            },
+            ['iframe', { src: parsed.embedSrc, title: 'Embedded content', loading: 'lazy', referrerpolicy: 'strict-origin-when-cross-origin' }],
+          ]
         : ['div', { class: 'editor-embed__placeholder' }, url ? `Embed: ${url}` : '(paste a link)'],
     ];
   },
@@ -109,11 +116,13 @@ export const Embed = Node.create<EmbedOptions>({
 
           if (parsed) {
             const frame = document.createElement('div');
-            frame.className = 'editor-embed__frame';
+            frame.className = parsed.height ? 'editor-embed__frame editor-embed__frame--fixed' : 'editor-embed__frame';
+            if (parsed.height) frame.style.height = `${parsed.height}px`;
             const iframe = document.createElement('iframe');
             iframe.src = parsed.embedSrc;
             iframe.loading = 'lazy';
             iframe.title = 'Embedded content';
+            iframe.referrerPolicy = 'strict-origin-when-cross-origin';
             iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
             iframe.allowFullscreen = true;
             frame.appendChild(iframe);
@@ -134,7 +143,7 @@ export const Embed = Node.create<EmbedOptions>({
             link.appendChild(a);
             const note = document.createElement('span');
             note.className = 'editor-embed__link-note';
-            note.textContent = 'Not a recognized video link — this will show as a plain link.';
+            note.textContent = 'Not a recognized embed link — this will show as a plain link.';
             link.appendChild(note);
             link.appendChild(btn);
             dom.appendChild(link);
@@ -145,7 +154,7 @@ export const Embed = Node.create<EmbedOptions>({
         const input = document.createElement('input');
         input.type = 'text';
         input.className = 'editor-embed__input';
-        input.placeholder = 'Paste a YouTube or Vimeo link, then press Enter';
+        input.placeholder = 'Paste a YouTube, Vimeo, Spotify, SoundCloud, Google Maps, or CodePen link, then press Enter';
         input.value = pendingValue ?? n.attrs.url ?? '';
         const cancelToLive = () => {
           if (!parsed && !committedButUnrecognized) return false;

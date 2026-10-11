@@ -39,12 +39,11 @@ export const SLASH_ITEMS: SlashMenuItem[] = [
   { title: 'Numbered list', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleOrderedList().run(), icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><text x="4" y="10" font-size="12" text-anchor="middle" fill="currentColor">1</text><text x="4" y="16" font-size="12" text-anchor="middle" fill="currentColor">2</text><text x="4" y="22" font-size="12" text-anchor="middle" fill="currentColor">3</text></svg>' },
   { title: 'Divider', command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHorizontalRule().run(), icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/></svg>' },
   { title: 'Image', action: 'image-picker', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>' },
-  // Same underlying 'embed' node the whole publish/render pipeline already
-  // validates (lib/content/embed-url.ts) — labeled "Video" because that's
-  // what it's for on this site (YouTube/Vimeo); a link that isn't a
-  // recognized video still saves fine and shows as a plain link on
-  // publish, it's just not what this entry point is for.
-  { title: 'Video', keywords: ['embed'], command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setEmbed({ url: '' }).run(), icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="15" height="14" rx="2" ry="2"/><polygon points="10 9 14 12 10 15 10 9" fill="currentColor" stroke="none"/><path d="M17 9.5 22 7v10l-5-2.5"/></svg>' },
+  // The 'embed' node, which recognizes YouTube, Vimeo, Spotify, SoundCloud,
+  // Google Maps, and CodePen links (lib/content/embed-url.ts) and renders
+  // each as its native player/widget. A link that isn't from one of those
+  // still saves fine and shows as a plain link on publish.
+  { title: 'Embed', keywords: ['video', 'youtube', 'vimeo', 'spotify', 'soundcloud', 'maps', 'codepen'], command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setEmbed({ url: '' }).run(), icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="15" height="14" rx="2" ry="2"/><polygon points="10 9 14 12 10 15 10 9" fill="currentColor" stroke="none"/><path d="M17 9.5 22 7v10l-5-2.5"/></svg>' },
 ];
 
 export class SlashMenu {
