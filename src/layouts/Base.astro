@@ -14,7 +14,7 @@ import '../styles/global.css';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import site from '../lib/site.mjs';
-import { u } from '../lib/url.mjs';
+import { siteOrigin, u } from '../lib/url.mjs';
 
 const { title, description, ogImage, canonical, type = 'website' } = Astro.props;
 const fullTitle = title
@@ -22,7 +22,7 @@ const fullTitle = title
   : `${site.site.coverTitle} — ${site.site.title}`;
 const desc = description || `${site.site.coverTitle} — ${site.site.title}.`;
 const ogUrl = (ogImage ?? '/og.jpg').startsWith('/')
-  ? `https://www.chillinwithpras.com${ogImage ?? '/og.jpg'}`
+  ? `${siteOrigin}${ogImage ?? '/og.jpg'}`
   : ogImage ?? '/og.jpg';
 ---
 

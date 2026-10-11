@@ -7,6 +7,7 @@ import { ratio } from '../lib/images';
 import { getArticlesInSection } from '../lib/cms/build-content.ts';
 import { newestFirst } from '../lib/content/article.ts';
 import { SECTIONS, sectionCover, sectionDesc, two } from '../lib/site.mjs';
+import { siteOrigin } from '../lib/url.mjs';
 
 const { section } = Astro.props;
 const sec = SECTIONS[section];
@@ -23,7 +24,7 @@ const chapterNum = section === 'observe' ? '01' : '02';
 <Base
   title={sec.title}
   description={sectionDesc(section)[0]}
-  canonical={`https://www.chillinwithpras.com${sec.path}`}
+  canonical={`${siteOrigin}${sec.path}`}
   current={sec.path}
 >
   <section class="container section-head">
