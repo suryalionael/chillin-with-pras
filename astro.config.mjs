@@ -8,14 +8,14 @@ import react from '@astrojs/react';
 // The Cloudflare adapter exists only so /admin and /api/admin can run on demand;
 // those routes opt out with `export const prerender = false`.
 // https://docs.astro.build/en/guides/integrations-guide/cloudflare/
-// The pages deployment someday lives at the site root. Until then, GitHub
-// Pages (project site) needs a base path; set it via ASTRO_PAGES_BASE
-// (e.g. ASTRO_PAGES_BASE=/chillin-with-pras/). When unset we keep the root
-// layout so the Cloudflare deployment stays byte-identical to today.
+// GitHub Pages now serves chillinwithpras.ca at the site root (a custom
+// domain, not the old /chillin-with-pras/ project-site subpath), so this
+// stays unset in normal operation. ASTRO_PAGES_BASE remains here only as an
+// escape hatch, should Pages ever need a subpath again.
 const PAGES_BASE = process.env.ASTRO_PAGES_BASE ? String(process.env.ASTRO_PAGES_BASE) : undefined;
 
 export default defineConfig({
-  site: 'https://www.chillinwithpras.com/',
+  site: 'https://chillinwithpras.ca/',
   trailingSlash: 'always',
   base: PAGES_BASE,
   output: 'static',

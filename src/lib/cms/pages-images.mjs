@@ -5,15 +5,24 @@
 //                               from a committed `.cms/media-manifest.json`
 //
 // The manifest is only consulted when the build targets GitHub Pages
-// (ASTRO_PAGES_BASE is set). Root/Cloudflare builds always use the Worker
+// (ASTRO_PAGES_BUILD=1). Root/Cloudflare builds always use the Worker
 // /images/{id} route and never read the committed media. The Article model
 // always carries the image id — this only picks a URL.
+//
+// Deliberately a separate flag from ASTRO_PAGES_BASE (the Astro `base:`
+// path): the two used to be the same variable, back when GitHub Pages only
+// ever served this project from the /chillin-with-pras/ project-site
+// subpath. Now that Pages serves chillinwithpras.ca at the root, that
+// subpath is gone (ASTRO_PAGES_BASE is unset again), but Pages builds still
+// need the exported-media image URLs, not the Worker-only /images/ route —
+// so "is this a Pages build" can no longer be inferred from "does it have a
+// base path".
 import { readFileSync, existsSync } from 'node:fs';
 import { cwd } from 'node:process';
 import { join } from 'node:path';
 import { baseUrl, u } from '../url.mjs';
 
-const PAGES_BUILD = !!process.env.ASTRO_PAGES_BASE;
+const PAGES_BUILD = process.env.ASTRO_PAGES_BUILD === '1';
 const MANIFEST = join(cwd(), '.cms', 'media-manifest.json');
 
 let cached = null;

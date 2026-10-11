@@ -1,15 +1,15 @@
 // Pages build verification for the deploy-pages workflow.
-// Checks the base-prefixed output (dist/client/<pages base>) that GitHub Pages
-// will serve: legacy routes, committed-snapshot CMS routes (when present),
-// exported media consistency, and absence of secrets/draft data.
+// Checks the output (dist/client) that GitHub Pages serves at the
+// chillinwithpras.ca root: legacy routes, committed-snapshot CMS routes
+// (when present), exported media consistency, and absence of secrets/draft
+// data.
 //
 //   node scripts/verify-pages.mjs [dist] [snapshot]
 
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-const BASE = '/chillin-with-pras';
-const dist = process.argv[2] ?? join('dist', 'client', BASE.slice(1));
+const dist = process.argv[2] ?? join('dist', 'client');
 const fixture = process.argv[3] ?? '.cms/snapshot.json';
 
 let problems = 0;
@@ -33,14 +33,14 @@ for (const a of site.articles.slice(0, 5)) {
 report(existsSync(join(dist, 'to-observe-and-report', 'index.html')), 'observe archive exists');
 report(existsSync(join(dist, 'to-show-and-tell', 'index.html')), 'show archive exists');
 
-// ---------- base-prefixed links ----------
+// ---------- root-relative links ----------
 const home = read(join(dist, 'index.html')) ?? '';
-report(home.includes(`${BASE}/to-observe-and-report/`), 'homepage nav link is base-prefixed');
-report(/src="\/chillin-with-pras\/_astro\//.test(home), 'homepage asset URL is base-prefixed');
+report(home.includes('/to-observe-and-report/'), 'homepage nav link is root-relative');
+report(/src="\/_astro\//.test(home), 'homepage asset URL is root-relative');
 const theWall = read(join(dist, 'to-observe-and-report', 'the-wall', 'index.html'));
 report(!!theWall, 'the-wall article readable');
 if (theWall) {
-  report(theWall.includes('href="/chillin-with-pras/'), 'article internal links base-prefixed');
+  report(/href="\/(?!chillin-with-pras\/)/.test(theWall), 'article internal links root-relative');
 }
 
 // ---------- CMS snapshot routes used by Pages ----------

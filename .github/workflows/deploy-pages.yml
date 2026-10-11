@@ -115,7 +115,7 @@ jobs:
         if: steps.scope.outputs.content_only != 'true'
         run: npm run typecheck
 
-      - name: Build static site (published snapshot + Pages base)
+      - name: Build static site (published snapshot, Pages-targeted)
         run: |
           if [ ! -f .cms/snapshot.json ]; then
             echo "No published CMS snapshot (.cms/snapshot.json). Building legacy-only."
@@ -123,21 +123,26 @@ jobs:
           else
             export CMS_SNAPSHOT_FILE=.cms/snapshot.json
           fi
-          export ASTRO_PAGES_BASE=/chillin-with-pras/
+          # Pages serves chillinwithpras.ca at the root now (a custom domain,
+          # not a /chillin-with-pras/ project-site subpath) — ASTRO_PAGES_BASE
+          # stays unset. ASTRO_PAGES_BUILD is the separate flag that still
+          # tells cmsImageUrl() to use the exported-media URLs instead of the
+          # Worker-only /images/ route, regardless of base path.
+          export ASTRO_PAGES_BUILD=1
           npm run build
 
       - name: Copy exported CMS media into the build
         run: |
           if [ -d .cms/media ] && [ "$(ls -A .cms/media 2>/dev/null)" ]; then
-            mkdir -p dist/client/chillin-with-pras/cms-media
-            cp .cms/media/* dist/client/chillin-with-pras/cms-media/
+            mkdir -p dist/client/cms-media
+            cp .cms/media/* dist/client/cms-media/
             echo "copied $(ls -1 .cms/media | wc -l | tr -d ' ') media file(s)"
           else
             echo "no CMS media to copy"
           fi
 
       - name: Verify static output (Pages-aware)
-        run: node scripts/verify-pages.mjs dist/client/chillin-with-pras
+        run: node scripts/verify-pages.mjs dist/client
 
       - name: Upload Pages artifact
         uses: actions/configure-pages@v5
@@ -145,7 +150,7 @@ jobs:
       - name: Publish artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist/client/chillin-with-pras
+          path: dist/client
 
       - name: Deploy to GitHub Pages
         id: deployment
