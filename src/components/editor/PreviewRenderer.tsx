@@ -116,12 +116,16 @@ function PreviewEmbed({ block }: { block: EmbedBlock }) {
   if (!block.url) return null;
   const parsed = parseEmbedUrl(block.url);
   if (parsed) {
+    const boxStyle: React.CSSProperties = parsed.height
+      ? { position: 'relative', margin: '2.5rem auto', maxWidth: '44rem', width: '100%', height: parsed.height, borderRadius: '2px', overflow: 'hidden' }
+      : { position: 'relative', margin: '2.5rem auto', maxWidth: '44rem', width: '100%', paddingTop: '56.25%', background: '#000', borderRadius: '2px', overflow: 'hidden' };
     return (
-      <div style={{ position: 'relative', margin: '2.5rem auto', maxWidth: '44rem', width: '100%', paddingTop: '56.25%', background: '#000', borderRadius: '2px', overflow: 'hidden' }}>
+      <div style={boxStyle}>
         <iframe
           src={parsed.embedSrc}
           title="Embedded content"
           loading="lazy"
+          referrerPolicy="strict-origin-when-cross-origin"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}

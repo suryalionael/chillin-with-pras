@@ -29,6 +29,52 @@ test('parseEmbedUrl: unrecognized providers and garbage input return null withou
   assert.equal(parseEmbedUrl(''), null);
 });
 
+test('parseEmbedUrl: recognizes Spotify tracks/episodes (compact) vs albums/playlists/shows/artists (tall)', () => {
+  const track = parseEmbedUrl('https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT');
+  assert.equal(track?.provider, 'spotify');
+  assert.equal(track?.embedSrc, 'https://open.spotify.com/embed/track/4cOdK2wGLETKBW3PvgPWqT');
+  assert.equal(track?.height, 152);
+
+  const playlist = parseEmbedUrl('https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M');
+  assert.equal(playlist?.provider, 'spotify');
+  assert.equal(playlist?.height, 352);
+
+  // A locale-prefixed path, as Spotify sometimes generates.
+  assert.equal(parseEmbedUrl('https://open.spotify.com/intl-en/track/4cOdK2wGLETKBW3PvgPWqT')?.provider, 'spotify');
+});
+
+test('parseEmbedUrl: recognizes SoundCloud tracks and sets, wrapping the original URL in the player widget', () => {
+  const track = parseEmbedUrl('https://soundcloud.com/someartist/sometrack');
+  assert.equal(track?.provider, 'soundcloud');
+  assert.equal(track?.height, 166);
+  assert.ok(track?.embedSrc.startsWith('https://w.soundcloud.com/player/?'));
+  assert.ok(track?.embedSrc.includes(encodeURIComponent('https://soundcloud.com/someartist/sometrack')));
+
+  const set = parseEmbedUrl('https://soundcloud.com/someartist/sets/someplaylist');
+  assert.equal(set?.height, 300);
+
+  assert.equal(parseEmbedUrl('https://soundcloud.com/'), null);
+});
+
+test('parseEmbedUrl: recognizes Google Maps links by adding output=embed', () => {
+  const place = parseEmbedUrl('https://www.google.com/maps/place/Eiffel+Tower/@48.8584,2.2945,17z');
+  assert.equal(place?.provider, 'google-maps');
+  assert.equal(place?.height, 450);
+  assert.ok(place?.embedSrc.includes('output=embed'));
+
+  const query = parseEmbedUrl('https://maps.google.com/?q=Eiffel+Tower');
+  assert.equal(query?.provider, 'google-maps');
+
+  assert.equal(parseEmbedUrl('https://www.google.com/search?q=eiffel+tower'), null);
+});
+
+test('parseEmbedUrl: recognizes CodePen pens', () => {
+  const pen = parseEmbedUrl('https://codepen.io/someuser/pen/abcXYZ');
+  assert.equal(pen?.provider, 'codepen');
+  assert.equal(pen?.embedSrc, 'https://codepen.io/someuser/embed/abcXYZ?default-tab=result');
+  assert.equal(pen?.height, 400);
+});
+
 test('isSafeEmbedUrl and parseEmbedUrl agree on protocol: nothing parseEmbedUrl accepts is rejected by isSafeEmbedUrl', () => {
   const candidates = [
     'https://www.youtube.com/watch?v=dQw4w9WgXcQ',

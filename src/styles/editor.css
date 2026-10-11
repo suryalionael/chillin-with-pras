@@ -522,6 +522,15 @@
   overflow: hidden;
 }
 
+/* Non-video providers (Spotify, SoundCloud, Maps, CodePen) set an explicit
+   pixel height inline instead of the 16:9 padding-top box above — their
+   widgets aren't video players and would look stretched/mostly-blank inside
+   one. */
+.editor-embed__frame--fixed {
+  padding-top: 0;
+  background: transparent;
+}
+
 .editor-embed__frame iframe {
   position: absolute;
   inset: 0;
