@@ -3,7 +3,7 @@ import Base from '../layouts/Base.astro';
 import Photo from '../components/Photo.astro';
 import { ratio } from '../lib/images';
 import { cmsImageUrl } from '../lib/cms/pages-images.mjs';
-import { u } from '../lib/url.mjs';
+import { siteOrigin, u } from '../lib/url.mjs';
 import site, { SECTIONS, sectionDesc, sectionCover } from '../lib/site.mjs';
 import { getArticlesInSection } from '../lib/cms/build-content.ts';
 
@@ -34,7 +34,7 @@ function excerpt(article: { blocks: import('../lib/content/article.ts').ArticleB
 }
 ---
 
-<Base title={site.site.coverTitle} canonical="https://www.chillinwithpras.com/" current="/">
+<Base title={site.site.coverTitle} canonical={`${siteOrigin}/`} current="/">
   <section class="container cover">
     <p class="cover__kicker label">a personal archive</p>
     <h1 class="cover__title">Observations of a Slacker</h1>
