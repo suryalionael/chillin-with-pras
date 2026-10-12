@@ -6,8 +6,9 @@ export const SECTION_LABEL: Record<Section, string> = {
   show: 'To Show & Tell',
 };
 
-/** Where readers actually visit the site (GitHub Pages), not this admin Worker. */
-export const PUBLIC_SITE = 'https://suryalionael.github.io/chillin-with-pras';
+/** Where readers actually visit the site (the custom domain, served by GitHub
+ * Pages), not this admin Worker. */
+export const PUBLIC_SITE = 'https://chillinwithpras.ca';
 
 export const SECTION_PATH: Record<Section, string> = {
   observe: '/to-observe-and-report/',
