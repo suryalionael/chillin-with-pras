@@ -1,13 +1,16 @@
-import { PreviewRenderer } from './PreviewRenderer.tsx';
+import { PreviewRenderer, type ImageDims } from './PreviewRenderer.tsx';
 import { type StoryDocument } from '../../lib/cms/schema.ts';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 interface PreviewWrapperProps {
   initialDoc: string;
   storyId: string;
+  /** JSON of each image's stored width/height, keyed by image id. */
+  imageDims?: string;
 }
 
-export function PreviewWrapper({ initialDoc }: PreviewWrapperProps) {
+export function PreviewWrapper({ initialDoc, imageDims }: PreviewWrapperProps) {
+  const dims = useMemo<ImageDims>(() => (imageDims ? JSON.parse(imageDims) : {}), [imageDims]);
   const [doc, setDoc] = useState<StoryDocument>(JSON.parse(initialDoc));
 
   useEffect(() => {
@@ -20,6 +23,7 @@ export function PreviewWrapper({ initialDoc }: PreviewWrapperProps) {
       title={doc.title}
       subtitle={doc.subtitle}
       dateline={doc.dateline}
+      imageDims={dims}
     />
   );
 }

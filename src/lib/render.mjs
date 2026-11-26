@@ -4,7 +4,7 @@
 /**
  * @typedef {{ type: 'paragraph', text: string, subhead?: boolean, dateline?: boolean, inline?: Array, poetry?: boolean }} ParagraphItem
  * @typedef {{ type: 'figure', files: { file: string; alt: string }[], variant: 'single'|'pair'|'cluster' }} FigureItem
- * @typedef {{ type: 'figure', files: { imageId: string; alt: string; caption: string; decorative: boolean; size: 'wide'|'inset' }[], variant: 'single'|'pair'|'cluster', isCms: true }} CmsFigureItem
+ * @typedef {{ type: 'figure', files: { imageId: string; alt: string; caption: string; decorative: boolean; size: 'wide'|'inset'; width?: number; height?: number }[], variant: 'single'|'pair'|'cluster', isCms: true }} CmsFigureItem
  * @typedef {{ type: 'subheading', text: string, inline: Array }} SubheadingItem
  * @typedef {{ type: 'quote', paragraphs: Array<Array> }} QuoteItem
  * @typedef {{ type: 'list', ordered: boolean, items: Array<{ inline: Array, children: Array }> }} ListItem
@@ -53,6 +53,9 @@ export function renderSequence(blocks, dateline = '') {
             caption: img.caption,
             decorative: img.decorative,
             size: img.size,
+            // Real dimensions (when known) so Figure.astro sizes the photo at
+            // its true aspect ratio instead of cropping it to the 16:9 fallback.
+            ...(img.width && img.height ? { width: img.width, height: img.height } : {}),
           });
         } else {
           imgs.push({ file: img.file, alt: img.alt || '' });

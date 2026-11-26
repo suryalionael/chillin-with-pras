@@ -98,7 +98,7 @@ if (ogLead && ogLead.source === 'cms') {
           // preview and incorrectly still rendered wide once published.
           <Figure
             variant="single"
-            files={[{ imageId: hero.imageId, alt: hero.alt || article.title, caption: hero.caption, decorative: hero.decorative, size: hero.size }]}
+            files={[{ imageId: hero.imageId, alt: hero.alt || article.title, caption: hero.caption, decorative: hero.decorative, size: hero.size, width: hero.width, height: hero.height }]}
             tone={hero.size === 'inset' ? 'inset-right' : 'wide'}
             hero={true}
             isCms={true}

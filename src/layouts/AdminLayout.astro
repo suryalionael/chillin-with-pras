@@ -17,8 +17,10 @@ import '../styles/editor.css';
 interface Props {
   title?: string;
   bare?: boolean;
+  /** Drop the admin's 62rem column so a page (Preview) can use the public site's own widths. */
+  wide?: boolean;
 }
-const { title = 'Admin', bare = false } = Astro.props;
+const { title = 'Admin', bare = false, wide = false } = Astro.props;
 const admin = Astro.locals.admin;
 ---
 
@@ -51,7 +53,7 @@ const admin = Astro.locals.admin;
       </div>
     </header>
     )}
-    <main id="main" class:list={['admin-main', { 'admin-main--bare': bare }]}>
+    <main id="main" class:list={['admin-main', { 'admin-main--bare': bare, 'admin-main--wide': wide }]}>
       <slot />
     </main>
   </body>
@@ -168,6 +170,11 @@ const admin = Astro.locals.admin;
     max-width: 62rem;
     margin: 0 auto;
     padding: clamp(2rem, 6vw, 4rem) var(--gutter) 6rem;
+  }
+  /* the page's own .container supplies the public site's width and gutters */
+  .admin-main--wide {
+    max-width: none;
+    padding-inline: 0;
   }
 
   /* buttons */
