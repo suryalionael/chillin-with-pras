@@ -14,8 +14,13 @@
   "compatibility_date": "2026-06-01",
   "compatibility_flags": ["nodejs_compat"],
 
-  // The Worker must only be reachable through the real domain (behind Access),
-  // never through *.workers.dev or preview URLs.
+  // The admin's main address. Cloudflare attaches this custom domain (and its
+  // DNS record + certificate) on deploy; chillinwithpras.ca must be an active
+  // zone in this Cloudflare account first, or the deploy fails. The public site
+  // itself stays on GitHub Pages at chillinwithpras.ca.
+  "routes": [{ "pattern": "admin.chillinwithpras.ca", "custom_domain": true }],
+  // Kept on as a fallback address while the custom domain settles; set to false
+  // once admin.chillinwithpras.ca is confirmed working.
   "workers_dev": true,
   "preview_urls": false,
 

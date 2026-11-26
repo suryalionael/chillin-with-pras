@@ -510,3 +510,13 @@ git push origin main             # deploy-pages workflow rebuilds Pages
 
 _This document reflects commit `5539497…` plus the Pages-preview implementation described in §20. Nothing
 production-side was created, deleted, or configured._
+## Admin domain: admin.chillinwithpras.ca
+
+The admin's main address is `https://admin.chillinwithpras.ca/admin/`. It's attached as a Worker custom domain in `wrangler.jsonc` (`routes`). The public site stays on GitHub Pages at `chillinwithpras.ca`.
+
+1. `chillinwithpras.ca` must be an active zone in the same Cloudflare account. Otherwise the Worker deploy fails with a zone-not-found error.
+2. On deploy, Cloudflare creates the `admin` DNS record and certificate. Don't add an `admin` CNAME yourself.
+3. Optional: add a Redirect Rule so `admin.chillinwithpras.ca/` goes to `/admin/`. `/` is a prerendered page and never reaches the middleware.
+4. Writers sign in with the same email and invite code. The session cookie is per-host, so writers sign in once more on the new address.
+5. `*.workers.dev` stays on as a fallback. Set `workers_dev` to `false` once the new address is confirmed working.
+6. `CMS_STATUS_URL` in `deploy-pages.yml` points at the new address, so the admin's "Deploying… → Live" status needs the domain to be live.

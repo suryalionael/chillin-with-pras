@@ -38,7 +38,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CMS_STATUS_URL: https://chillin-with-pras.suryalionael.workers.dev/api/deploy/status/
+  CMS_STATUS_URL: https://admin.chillinwithpras.ca/api/deploy/status/
 
 jobs:
   build-and-publish:
