@@ -1144,6 +1144,7 @@
 .preview-article .figure.figure--hero {
   --cap: 105vh; /* the hero may run a little past the fold */
 }
+.preview-article .figure {
   --cap: 82vh;
   width: 100%;
   max-width: var(--wide);
