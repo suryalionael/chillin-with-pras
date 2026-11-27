@@ -74,3 +74,10 @@ test('renderSequence: unknown blocks are skipped without stalling', () => {
 test('renderSequence: an empty block list renders nothing', () => {
   assert.deepEqual(renderSequence([]), []);
 });
+test('renderSequence: a CMS image keeps its real width/height so Figure.astro does not crop it', () => {
+  const [withDims] = renderSequence([{ ...cmsImg(), width: 430, height: 573 }]);
+  assert.equal(withDims.files[0].width, 430);
+  assert.equal(withDims.files[0].height, 573);
+  const [without] = renderSequence([cmsImg()]);
+  assert.equal('width' in without.files[0], false);
+});

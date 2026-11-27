@@ -9,6 +9,7 @@ interface PreviewRendererProps {
   title: string;
   subtitle: string;
   dateline: string;
+  imageDims?: ImageDims;
 }
 
 function renderInline(inline: Inline[]): React.ReactNode {
@@ -54,34 +55,87 @@ function PreviewSubheading({ block }: { block: SubheadingBlock }) {
   return <h3 className="prose__text" style={{ fontFamily: 'var(--serif)', fontSize: '2rem', fontWeight: 600, lineHeight: 1.25, marginTop: '2rem', marginBottom: '1.75rem' }}>{renderInline(block.inline)}</h3>;
 }
 
-function PreviewImage({ block }: { block: CmsImageBlock }) {
-  const imageUrl = `/images/${block.imageId}/`;
-  const tone = block.size === 'inset' ? 'inset-right' : 'wide';
+export type ImageDims = Record<string, { width: number; height: number }>;
+
+// Mirrors Figure.astro (the public page) so Preview shows photographs the way
+// they'll actually publish: each at its real aspect ratio (from the image's
+// stored width/height), the writer's Standard/Wide choice for a lone photo, and
+// consecutive photos grouped into a pair or a cluster exactly as render.mjs
+// groups them. Styles live in editor.css under `.preview-prose .figure…`,
+// copied from Figure.astro's scoped styles, which never reach the admin.
+const MAX_CLUSTER = 6; // same cap as render.mjs
+const FALLBACK_AR = 1.7778; // Figure.astro's fallback when dimensions are missing
+
+function arOf(block: CmsImageBlock, dims: ImageDims): number {
+  const d = dims[block.imageId];
+  return d && d.width && d.height ? d.width / d.height : FALLBACK_AR;
+}
+
+function PreviewPhoto({ block, ar }: { block: CmsImageBlock; ar: number }) {
   return (
-    <div className="prose__figure">
-      <figure className={`figure figure--single figure--${tone}`}>
-        <div className="figure__box" style={{ width: 'min(100%, calc(var(--ar) * var(--cap)))', marginInline: 'auto' }}>
-          <div className="photo-frame" style={{ '--ar': '16 / 9' } as React.CSSProperties}>
-            <img
-              src={imageUrl}
-              alt={block.decorative ? '' : block.alt}
-              loading="lazy"
-              decoding="async"
-              className="photo"
-              style={{ aspectRatio: '16 / 9' }}
-            />
-          </div>
-          {block.caption && (
-            // textAlign inline, matching the public site's .figure__hand
-            // (Figure.astro) — nothing in the admin's own stylesheet reaches
-            // this className, same as every other prose__/figure__ class
-            // here (see PreviewParagraph's poetry handling for the same note).
-            <figcaption className="figure__hand hand" style={{ textAlign: 'center', marginTop: '0.7rem' }}>{block.caption}</figcaption>
-          )}
-        </div>
-      </figure>
+    <div className="photo-frame" style={{ '--ar': ar.toFixed(4) } as React.CSSProperties}>
+      <img
+        src={`/images/${block.imageId}/`}
+        alt={block.decorative ? '' : block.alt}
+        loading="lazy"
+        decoding="async"
+        className="photo"
+      />
     </div>
   );
+}
+
+function PreviewFigure({ images, dims, hero = false }: { images: CmsImageBlock[]; dims: ImageDims; hero?: boolean }) {
+  const variant = images.length === 1 ? 'single' : images.length === 2 ? 'pair' : 'cluster';
+  const ar = (b: CmsImageBlock) => arOf(b, dims);
+  const sum = (list: CmsImageBlock[]) => list.reduce((t, b) => t + ar(b), 0).toFixed(4);
+  // Same tone rule as ArticleBody.astro: a lone CMS photo follows its own
+  // size; pairs and clusters are always full width.
+  const tone = variant === 'single' && images[0].size === 'inset' ? 'inset-right' : 'wide';
+
+  const rows: CmsImageBlock[][] = [];
+  if (variant === 'cluster') {
+    const rest = images.slice(1);
+    let i = 0;
+    if (rest.length % 2 === 1 && rest.length >= 3 && rest.slice(0, 3).every((b) => ar(b) >= 1.15)) {
+      rows.push(rest.slice(0, 3));
+      i = 3;
+    }
+    for (; i < rest.length; i += 2) rows.push(rest.slice(i, i + 2));
+  }
+
+  const figure = (
+      <figure className={`figure figure--${variant} figure--${tone}${hero ? ' figure--hero' : ''}`}>
+        {variant === 'single' && (
+          <div className="figure__box" style={{ '--ar': ar(images[0]).toFixed(4) } as React.CSSProperties}>
+            <PreviewPhoto block={images[0]} ar={ar(images[0])} />
+            {images[0].caption && <figcaption className="figure__hand hand">{images[0].caption}</figcaption>}
+          </div>
+        )}
+        {variant === 'pair' && (
+          <div className="figure__row" style={{ '--sum': sum(images) } as React.CSSProperties}>
+            {images.map((b, i) => <PreviewPhoto key={i} block={b} ar={ar(b)} />)}
+          </div>
+        )}
+        {variant === 'cluster' && (
+          <>
+            <div className="figure__box" style={{ '--ar': ar(images[0]).toFixed(4) } as React.CSSProperties}>
+              <PreviewPhoto block={images[0]} ar={ar(images[0])} />
+            </div>
+            {rows.map((row, r) => (
+              <div
+                key={r}
+                className={`figure__row${row.length === 1 ? ' figure__row--solo' : ''}`}
+                style={{ '--sum': sum(row) } as React.CSSProperties}
+              >
+                {row.map((b, i) => <PreviewPhoto key={i} block={b} ar={ar(b)} />)}
+              </div>
+            ))}
+          </>
+        )}
+      </figure>
+  );
+  return hero ? <div className="story__hero">{figure}</div> : <div className="prose__figure">{figure}</div>;
 }
 
 function PreviewList({ block }: { block: ListBlock }) {
@@ -145,27 +199,64 @@ function PreviewEmbed({ block }: { block: EmbedBlock }) {
   );
 }
 
-export function PreviewRenderer({ doc, title, subtitle, dateline }: PreviewRendererProps) {
-  const blocks = useMemo(() => docToBlocks(doc), [doc]);
+export function PreviewRenderer({ doc, title, subtitle, dateline, imageDims = {} }: PreviewRendererProps) {
+  // Same reading order as ArticlePage.astro: the subtitle is the intro, or
+  // else the first plain paragraph is lifted out to serve as it; then the
+  // first photograph, if it sits near the top (index <= 8 once the intro is
+  // gone), is lifted out into the hero slot under the title.
+  const { intro, hero, blocks } = useMemo(() => {
+    let body = docToBlocks(doc);
+    const fromSubtitle = (subtitle ?? '').trim();
+    const introIdx = fromSubtitle ? -1 : body.findIndex((b) => b.type === 'p' && !b.subhead && b.text !== dateline);
+    const intro = fromSubtitle || (introIdx >= 0 ? (body[introIdx] as { text: string }).text : '');
+    if (introIdx >= 0) body = body.filter((_, i) => i !== introIdx);
+    const firstImg = body.findIndex((b) => b.type === 'img');
+    const hero = firstImg >= 0 && firstImg <= 8 ? (body[firstImg] as CmsImageBlock) : null;
+    if (hero) body = body.filter((_, i) => i !== firstImg);
+    return { intro, hero, blocks: body };
+  }, [doc, subtitle, dateline]);
+
+  // Group runs of consecutive photos (up to MAX_CLUSTER) into one figure, the
+  // way render.mjs does for the public page; everything else renders as-is.
+  const items = useMemo(() => {
+    const out: (ArticleBlock | { type: 'figure'; images: CmsImageBlock[] })[] = [];
+    for (let i = 0; i < blocks.length; ) {
+      const b = blocks[i];
+      if (b.type === 'img') {
+        const images: CmsImageBlock[] = [];
+        while (i < blocks.length && blocks[i].type === 'img' && images.length < MAX_CLUSTER) {
+          images.push(blocks[i] as CmsImageBlock);
+          i++;
+        }
+        out.push({ type: 'figure', images });
+      } else {
+        out.push(b);
+        i++;
+      }
+    }
+    return out;
+  }, [blocks]);
 
   return (
     <article className="container story preview-article">
       <header className="preview-header">
         <p className="admin-kicker" style={{ marginBottom: '0.5rem' }}>Preview</p>
         <h1 className="preview-title">{title || 'Untitled story'}</h1>
-        {subtitle && <p className="preview-subtitle">{subtitle}</p>}
         {dateline && <p className="preview-dateline hand-date" style={{ marginTop: '1rem', textAlign: 'right' }}>{dateline}</p>}
+        {intro && <p className="preview-lead">{intro}</p>}
       </header>
 
+      {hero && <PreviewFigure images={[hero]} dims={imageDims} hero />}
+
       <div className="prose preview-prose">
-        {blocks.map((block, i) => {
+        {items.map((block, i) => {
           switch (block.type) {
             case 'p':
               return <PreviewParagraph key={i} block={block} />;
             case 'subheading':
               return <PreviewSubheading key={i} block={block} />;
-            case 'img':
-              return <PreviewImage key={i} block={block} />;
+            case 'figure':
+              return <PreviewFigure key={i} images={block.images} dims={imageDims} />;
             case 'list':
               return <PreviewList key={i} block={block} />;
             case 'quote':

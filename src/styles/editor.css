@@ -1120,3 +1120,126 @@
     animation: none;
   }
 }
+/* ---------- Preview photographs ----------
+   A copy of Figure.astro's scoped styles (and ArticleBody.astro's
+   .prose__figure spacing), which never reach the admin, so Preview lays
+   photographs out exactly like the public page: real aspect ratio, tall
+   photos capped to the viewport instead of cropped, Standard (inset) vs Wide,
+   and level rows for pairs/clusters. Keep in step with Figure.astro. */
+.preview-prose .prose__figure {
+  margin: 4.5rem 0 5rem;
+}
+/* ArticlePage.astro's hero slot and ArticleHeader.astro's intro line */
+.preview-article .story__hero {
+  margin-bottom: clamp(3.5rem, 7vw, 5.5rem);
+}
+.preview-lead {
+  margin-top: 2rem;
+  color: var(--ink-soft);
+  font-size: var(--fs-lead);
+  font-style: italic;
+  line-height: 1.65;
+  max-width: var(--read);
+}
+.preview-article .figure.figure--hero {
+  --cap: 105vh; /* the hero may run a little past the fold */
+}
+  --cap: 82vh;
+  width: 100%;
+  max-width: var(--wide);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.preview-article .figure__box {
+  width: min(100%, calc(var(--ar) * var(--cap)));
+  margin-inline: auto;
+}
+.preview-article .figure--inset-right .figure__box {
+  width: min(100%, 56rem, calc(var(--ar) * var(--cap)));
+  margin-left: auto;
+  margin-right: 0;
+}
+.preview-article .figure__hand {
+  margin-top: 0.7rem;
+  font-size: 1.6rem;
+  line-height: 1.2;
+  text-align: center;
+  transform: rotate(-0.8deg);
+  transform-origin: center;
+}
+.preview-article .figure__row {
+  display: flex;
+  gap: 1.25rem;
+  align-items: stretch;
+  width: min(100%, calc(var(--sum) * var(--cap)));
+  margin-inline: auto;
+}
+.preview-article .figure__row--solo {
+  justify-content: center;
+}
+.preview-article .figure__row .photo-frame {
+  flex: var(--ar) 1 0;
+  min-width: 0;
+}
+@media (max-width: 800px) {
+  .preview-lead {
+    font-size: 1.28rem;
+    line-height: 1.6;
+  }
+  .preview-article .figure,
+  .preview-article .figure.figure--hero {
+    --cap: 78vh;
+    gap: 1rem;
+  }
+  .preview-article .figure__row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .preview-article .figure__row .photo-frame {
+    flex: none;
+    width: min(100%, calc(var(--ar) * 78vh));
+    margin-inline: auto;
+  }
+  .preview-article .figure__hand {
+    font-size: 1.45rem;
+  }
+  .preview-article .figure__box .photo {
+    aspect-ratio: min(var(--ar), 1.8);
+  }
+}
+
+/* ---------- Preview text ----------
+   ArticleBody.astro / ArticleHeader.astro / EditorialTitle.astro scoped
+   styles, copied so Preview's text column, paragraphs and title sit where
+   the public page puts them. Keep in step with those components. */
+.preview-article .preview-header {
+  padding: clamp(2.5rem, 6vw, 4.5rem) 0 clamp(2.5rem, 5vw, 3.5rem) max(0px, calc((100% - var(--read)) / 2));
+}
+.preview-article .preview-title {
+  max-width: 18ch;
+  text-wrap: balance;
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: var(--fs-h-page);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+}
+.preview-prose {
+  width: 100%;
+  padding-top: 0.5rem;
+}
+.preview-prose .prose__text {
+  max-width: var(--read);
+  margin-left: auto;
+  margin-right: auto;
+}
+.preview-prose .prose__p {
+  font-family: var(--serif);
+  font-size: var(--fs-body);
+  font-weight: 500;
+  line-height: 1.85;
+  margin-bottom: 1.5em;
+  color: var(--ink);
+}

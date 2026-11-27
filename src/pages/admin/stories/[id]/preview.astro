@@ -2,16 +2,25 @@
 import AdminLayout from '../../../../layouts/AdminLayout.astro';
 import { PreviewWrapper } from '../../../../components/editor/PreviewWrapper.tsx';
 import { getEnv } from '../../../../lib/cms/runtime.ts';
-import { getStory, type D1Like, type Story } from '../../../../lib/cms/db.ts';
+import { getStory, getImageDimensions, type D1Like, type Story } from '../../../../lib/cms/db.ts';
+import { docToBlocks } from '../../../../lib/preview-blocks.ts';
 import { isUuid } from '../../../../lib/cms/api.ts';
 
 export const prerender = false;
 
 const id = Astro.params.id;
 let story: Story | null = null;
+// Real width/height of every photo in the draft, so Preview sizes each one at
+// its true aspect ratio like the public page does (Figure.astro).
+let imageDims: Record<string, { width: number; height: number }> = {};
 if (isUuid(id)) {
   try {
-    story = await getStory((await getEnv()).DB as unknown as D1Like, id);
+    const db = (await getEnv()).DB as unknown as D1Like;
+    story = await getStory(db, id);
+    if (story) {
+      const ids = [...new Set(docToBlocks(story.draft).flatMap((b) => (b.type === 'img' && b.source === 'cms' ? [b.imageId] : [])))];
+      imageDims = await getImageDimensions(db, ids);
+    }
   } catch (e) {
     console.error('admin preview: could not load story', e instanceof Error ? e.message : e);
   }
@@ -19,7 +28,7 @@ if (isUuid(id)) {
 if (!story) Astro.response.status = 404;
 ---
 
-<AdminLayout title="Preview">
+<AdminLayout title="Preview" wide>
   {
     !story ? (
       <>
@@ -32,6 +41,7 @@ if (!story) Astro.response.status = 404;
           client:only="react"
           storyId={story.id}
           initialDoc={JSON.stringify(story.draft)}
+          imageDims={JSON.stringify(imageDims)}
         />
       </div>
     )
