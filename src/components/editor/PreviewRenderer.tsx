@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { pickIntro } from '../../lib/intro.ts';
 import { docToBlocks } from '../../lib/preview-blocks.ts';
 import type { ArticleBlock, Inline, CmsImageBlock, SubheadingBlock, ListBlock, ListItem, QuoteBlock, EmbedBlock } from '../../lib/preview-blocks.ts';
 import { parseEmbedUrl } from '../../lib/content/embed-url.ts';
@@ -200,20 +201,17 @@ function PreviewEmbed({ block }: { block: EmbedBlock }) {
 }
 
 export function PreviewRenderer({ doc, title, subtitle, dateline, imageDims = {} }: PreviewRendererProps) {
-  // Same reading order as ArticlePage.astro: the subtitle is the intro, or
-  // else the first plain paragraph is lifted out to serve as it; then the
-  // first photograph, if it sits near the top (index <= 8 once the intro is
-  // gone), is lifted out into the hero slot under the title.
+  // Same reading order as ArticlePage.astro: the intro comes only from the
+  // Subtitle box (lib/intro.ts, shared with the public page), then the first
+  // photograph, if it sits near the top (index <= 8), is lifted out into the
+  // hero slot under the title.
   const { intro, hero, blocks } = useMemo(() => {
-    let body = docToBlocks(doc);
-    const fromSubtitle = (subtitle ?? '').trim();
-    const introIdx = fromSubtitle ? -1 : body.findIndex((b) => b.type === 'p' && !b.subhead && b.text !== dateline);
-    const intro = fromSubtitle || (introIdx >= 0 ? (body[introIdx] as { text: string }).text : '');
-    if (introIdx >= 0) body = body.filter((_, i) => i !== introIdx);
+    const picked = pickIntro('cms', subtitle, docToBlocks(doc), dateline);
+    let body = picked.blocks;
     const firstImg = body.findIndex((b) => b.type === 'img');
     const hero = firstImg >= 0 && firstImg <= 8 ? (body[firstImg] as CmsImageBlock) : null;
     if (hero) body = body.filter((_, i) => i !== firstImg);
-    return { intro, hero, blocks: body };
+    return { intro: picked.intro, hero, blocks: body };
   }, [doc, subtitle, dateline]);
 
   // Group runs of consecutive photos (up to MAX_CLUSTER) into one figure, the
