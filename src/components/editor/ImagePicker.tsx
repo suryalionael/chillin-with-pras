@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { heicToJpeg, isHeicFile, looksLikeHeic } from '../../lib/heic.ts';
 
 export interface ImageRecord {
   id: string;
@@ -34,6 +35,7 @@ export function ImagePicker({ isOpen, onClose, onSelect }: ImagePickerProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [converting, setConverting] = useState(false);
   const [tab, setTab] = useState<'library' | 'upload'>('upload');
 
   const fetchImages = useCallback(async () => {
@@ -58,10 +60,23 @@ export function ImagePicker({ isOpen, onClose, onSelect }: ImagePickerProps) {
 
   // Matches Medium: dropping/picking a file uploads it and inserts it into the
   // story immediately — there's no separate "now go find it in the library" step.
-  const handleFileUpload = async (file: File) => {
+  const handleFileUpload = async (picked: File) => {
     setUploading(true);
     setError(null);
     try {
+      // iPhone photos (HEIC) are converted to JPEG here, since only Safari can
+      // display HEIC and the server accepts JPEG/PNG/WebP/GIF.
+      let file = picked;
+      if (looksLikeHeic(picked) || (await isHeicFile(picked))) {
+        setConverting(true);
+        try {
+          file = await heicToJpeg(picked);
+        } catch {
+          throw new Error("Couldn't convert this iPhone photo (HEIC). Try exporting it as a JPEG and uploading that.");
+        } finally {
+          setConverting(false);
+        }
+      }
       const formData = new FormData();
       formData.append('file', file);
       const res = await fetch('/api/admin/images/', {
@@ -88,7 +103,8 @@ export function ImagePicker({ isOpen, onClose, onSelect }: ImagePickerProps) {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
+    // HEIC files often arrive with an empty type outside Safari, so also go by name.
+    if (file && (file.type.startsWith('image/') || looksLikeHeic(file))) {
       handleFileUpload(file);
     }
   };
@@ -143,7 +159,7 @@ export function ImagePicker({ isOpen, onClose, onSelect }: ImagePickerProps) {
             >
               <input
                 type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
+                accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.heic,.heif"
                 onChange={handleFileChange}
                 id="image-upload-input"
                 className="image-picker__file-input"
@@ -156,10 +172,10 @@ export function ImagePicker({ isOpen, onClose, onSelect }: ImagePickerProps) {
                   <line x1="12" y1="3" x2="12" y2="15"/>
                 </svg>
                 <p>Drag & drop an image, or click to browse</p>
-                <span className="image-picker__hint">JPEG, PNG, WebP, GIF · max 20MB</span>
+                <span className="image-picker__hint">JPEG, PNG, WebP, GIF, iPhone HEIC · max 20MB</span>
               </label>
             </div>
-            {uploading && <div className="image-picker__uploading">Uploading…</div>}
+            {uploading && <div className="image-picker__uploading">{converting ? 'Converting iPhone photo…' : 'Uploading…'}</div>}
           </div>
         )}
 
